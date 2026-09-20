@@ -16,3 +16,15 @@ Every decision the spec did not make. Format: what — why — cost to change la
 - CI = GitHub Actions: lint, typecheck, unit + RLS, build. Graph always mocked (`GRAPH_MODE=mock`). — Spec §14. — Low.
 - Edge Functions use `verify_jwt = false` and verify callers themselves (cron functions check the service-role bearer; `recording-play` validates the user JWT with `auth.getUser`). — pg_net cron calls carry the service key, not a user JWT. — Low.
 - Password policy: min 12 chars, letters + digits (`config.toml`, also enforced in the app). — Spec says a sane minimum of 12. — Trivial.
+
+## Phase 1 — schema and RLS
+- Pre-provisioning creates the **auth user first** (Admin API, `email_confirm: true`), then `profiles` and `students`. Google sign-in then *links* to that user by verified email; it never creates one (`enable_signup=false` + hook + `auth.users` trigger). — `profiles.id` is an FK to `auth.users.id` per spec, so a profile cannot exist before its auth user. — Low; the guard triggers stay valid.
+- Teachers/admins are blocked from Google by a `BEFORE INSERT` trigger on `auth.identities` (Google identity may only attach to a `student` profile at the allowed domain). — Server-side, survives any client. — Low.
+- "Force password change on first login" is tracked in `auth.users.app_metadata.must_change_password` (server-controlled). — Users cannot edit app_metadata; no extra table. — Low.
+- `app_settings` single-row table mirrors the App env vars so triggers can read the join-window lead time and allowed domain. Env vars remain the source for Next/Edge code. — Postgres cannot read env. — Low; keep both in sync via the admin UI/migration.
+- `class_sessions.sync_claimed_at` added (not in spec) so a provisioner crash mid-claim can be recovered (rows stuck in `provisioning` for > 15 min are re-queued). — Operational safety. — Trivial.
+- Override side effects (`provider='custom'`, `teams_join_url=null`, `override_set_by/at`, audit row) are applied by the `BEFORE UPDATE` trigger for every caller, so the app and any admin SQL behave identically; the Graph event deletion is picked up by the provisioner from `(status='cancelled' or provider='custom') and graph_event_id is not null`. — Keeps Graph out of the request path (§7.3). — Low.
+- Reschedule keeps `graph_event_id` and re-queues with `sync_status='pending'`; the provisioner PATCHes when `teams_join_url` is present, otherwise deletes and recreates. — Same join URL after reschedule, per §7.5. — Low.
+- Students may read `programs`, `subjects`, `holidays` freely (catalogue data); `batches`/`batch_subjects` are scoped to their own batch. Students cannot read `teachers` (UPNs); teacher names come via `profiles`. — Least privilege without breaking the dashboard. — Low.
+- Attendance trigger skips the window check when there is no JWT (`auth.uid() is null`, i.e. service role or seed). Every client path carries a JWT. — Lets the seed backfill history. — Low.
+- Seeded teacher/admin passwords (`TeacherPass12345`, `AdminPass12345`) are for local/test only and documented in `seed.sql`. — E2E needs deterministic logins. — Never seed production.
