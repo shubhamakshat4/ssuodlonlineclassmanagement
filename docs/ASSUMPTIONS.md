@@ -28,3 +28,9 @@ Every decision the spec did not make. Format: what — why — cost to change la
 - Students may read `programs`, `subjects`, `holidays` freely (catalogue data); `batches`/`batch_subjects` are scoped to their own batch. Students cannot read `teachers` (UPNs); teacher names come via `profiles`. — Least privilege without breaking the dashboard. — Low.
 - Attendance trigger skips the window check when there is no JWT (`auth.uid() is null`, i.e. service role or seed). Every client path carries a JWT. — Lets the seed backfill history. — Low.
 - Seeded teacher/admin passwords (`TeacherPass12345`, `AdminPass12345`) are for local/test only and documented in `seed.sql`. — E2E needs deterministic logins. — Never seed production.
+
+## Phase 2 — auth
+- Middleware loads the role from `profiles` on every request (one indexed PK lookup) rather than caching it in the JWT. — Spec wording; keeps deactivation immediate. — Low: a custom access-token hook could add a claim later.
+- After a successful sign-in the callback route signs the user straight back out when there is no active profile or when a Google session lands on a non-student profile. — Friendly error instead of an opaque database error (the DB triggers already block the link). — Trivial.
+- `next` redirect targets are restricted to same-origin relative paths (`safeNextPath`). — Open-redirect hygiene. — Trivial.
+- Invited teachers/admins get `must_change_password=true`; clearing it needs the service-role key on the Next.js server. — app_metadata is admin-only by design. — Low.

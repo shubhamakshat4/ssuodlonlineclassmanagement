@@ -28,3 +28,15 @@ One entry per phase. Newest at the bottom.
   `tests/db/rls.test.ts` — 48 assertions as anon / student A / student B / on-hold student / two teachers /
   admin / service role, plus auth-guard tests. All green on embedded Postgres 17.
 - Skipped: nothing. Not run against Supabase cloud (B2).
+
+## Phase 2 — auth — done
+- Built: Supabase client factories (`src/lib/supabase/{client,server,admin,middleware}.ts`), `src/middleware.ts`
+  (JWT validated with `getUser()`, role loaded from `profiles`, gating rules in the pure module
+  `src/lib/auth/routing.ts`), `requireUser()/requireRole()` server guards, `/login` (email+password, server
+  action), `/login/student` (Google with `hd` hint), `/auth/callback` (code exchange + post-sign-in checks),
+  `/auth/signout`, `/auth/error`, forced password change at `/account/password` (12-char policy, clears
+  `app_metadata.must_change_password` via the Admin API), role layouts with a shared `AppShell`.
+  `config.toml`: `enable_signup=false` (pre-provisioned users only).
+- Tested: `tests/unit/auth.test.ts` (route decisions, open-redirect protection, password policy). Lint,
+  typecheck, build green. DB-side guards were covered in Phase 1.
+- Skipped: live Google sign-in (needs the cloud project configured — B2).
