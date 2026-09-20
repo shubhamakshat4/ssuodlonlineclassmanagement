@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    env:
+      # Graph is always mocked in CI. Real-tenant checks run only via `npm run graph:spike` by a human.
+      GRAPH_MODE: mock
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      # Unit tests + RLS suite. The RLS suite boots an embedded Postgres 17, applies every
+      # migration and the seed, then exercises policies as real JWT-claimed roles.
+      - run: npm test
+      - run: npm run build
