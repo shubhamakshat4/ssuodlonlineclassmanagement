@@ -67,3 +67,9 @@ Every decision the spec did not make. Format: what — why — cost to change la
 - Event deletion failures do not flip the session to `failed` (it is already cancelled/custom); they increment `sync_attempts` and keep the event id so the next run retries. — The class itself is unaffected. — Low.
 - A session that was provisioned but ends up without `recordAutomatically` stays `provisioned` with an explanatory `sync_error`. — Students can still join; only recording is affected. — Low.
 - "Run provisioner now" executes the job inside the Next.js server (server-side, service role) instead of calling the Edge Function over HTTP. — Works locally without deployed functions and keeps one code path. — Low; swap for `invoke_edge_function` if preferred.
+
+## Phase 8 — student dashboard / attendance
+- The join API runs with the **user's** session (anon key + JWT), never the service role, so the attendance trigger and RLS are the enforcement. — §5 "never rely on the client"; keeps the DB as the single gate. — Low.
+- The attendance insert is an upsert with `ignoreDuplicates`, so a second click is a no-op (unique on session+student). — §10. — Trivial.
+- The Join button opens a blank tab synchronously and navigates it after the API call. — Browsers block `window.open` after an `await`. — Trivial.
+- E2E student sign-in uses an Admin-API magic link instead of Google (cannot be automated). — Same session shape for the app. — None.

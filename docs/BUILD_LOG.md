@@ -105,3 +105,16 @@ One entry per phase. Newest at the bottom.
   degrade + manual mode. `tests/db/provisioning.test.ts` — claim semantics, SKIP LOCKED with two
   connections, stuck recovery, privileges, deletion view.
 - Skipped: nothing (cloud deployment pending B2).
+
+## Phase 8 — student dashboard, Join Now, attendance — done
+- Built: `/student` (today's classes with Join Now + countdown, next 7 days grouped by IST day,
+  "Link updated" / "Cancelled" / "Not on Teams — no recording" badges, enrolment warning, explicit
+  "joined from the portal ≠ presence" copy), `/student/profile` (read-only), `POST /api/sessions/{id}/join`
+  (runs as the caller → RLS + attendance trigger; upsert with ignoreDuplicates; stores IP + UA; returns the
+  effective URL; teachers/admins get the URL without an attendance row), `JoinButton` (opens the tab
+  before the fetch to dodge popup blockers), shared rules in `_shared/sessions.ts` (join window, effective
+  URL, countdown, recording expiry, override URL validation).
+- Tested: `tests/unit/sessions.test.ts` (join window boundaries + lead config, precedence, expiry,
+  validation). Attendance trigger/RLS behaviour was covered in Phase 1. Playwright `e2e/student-join.spec.ts`
+  written (magic-link sign-in as the Google stand-in) — not executed (B2).
+- Skipped: nothing.
