@@ -16,7 +16,7 @@ export default async function StudentLoginPage({ searchParams }: { searchParams:
       </div>
       <GoogleSignInButton next={next ?? ''} hostedDomain={appConfig.allowedStudentDomain} initialError={error} />
       <p className="text-xs text-muted-foreground">
-        Any university account can sign in. If you see “No class mapped”, contact the ODL office to be added to your batch.
+        Any university account can sign in. If no classes are assigned to you yet, contact the ODL department to be added to your batch.
       </p>
       <p className="text-sm text-muted-foreground">
         Teacher or admin?{' '}

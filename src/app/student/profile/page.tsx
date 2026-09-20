@@ -24,7 +24,7 @@ export default async function StudentProfilePage() {
   ];
   return (
     <>
-      <PageHeader title="Profile" description={s ? 'Read-only. Contact the ODL office to correct anything here.' : 'No class mapped yet — contact admin to be added to a batch.'} />
+      <PageHeader title="Profile" description={s ? 'Read-only. Contact the ODL office to correct anything here.' : 'No classes are assigned to you yet — contact the ODL department for more details.'} />
       <Card className="max-w-xl">
         <CardContent className="pt-5">
           <dl className="grid grid-cols-[160px_1fr] gap-y-3 text-sm">

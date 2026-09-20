@@ -195,3 +195,8 @@ One entry per phase. Newest at the bottom.
   accounts; `v_unmapped_students` view. App: "No class mapped — contact admin" on `/student`, admin
   "Signed in but not mapped" box with *Map to batch*, copy updates. Tests updated (143 green). Applied to the
   cloud project and verified through the live app (unmapped → mapped). `docs/GOOGLE_SSO_SETUP.md` written.
+- Fix (21 Sep): first-time Google students were refused with "Signups not allowed for this instance" because
+  the global sign-up switch runs before the hook. Sign-ups are now ON; migrations 001300/001400 move the rule into
+  `before_user_created_hook` (Google@domain yes, other domains no, email/password only via Admin API stamp).
+  Verified live: public `signUp` refused with the ODL-office message, admin `createUser` OK, unmapped Google
+  student sees "No classes are assigned to you yet — contact the ODL department".

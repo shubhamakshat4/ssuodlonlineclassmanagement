@@ -36,7 +36,7 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
             <Card className="border-amber-300">
               <CardHeader>
                 <CardTitle>Signed in but not mapped ({unmapped.length})</CardTitle>
-                <CardDescription>These students signed in with Google but have no batch yet. They currently see “No class mapped — contact admin”.</CardDescription>
+                <CardDescription>These students signed in with Google but have no batch yet. They currently see “No classes are assigned to you yet — contact the ODL department”.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3">
                 {unmapped.map((u) => (

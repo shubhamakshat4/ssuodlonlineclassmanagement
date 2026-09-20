@@ -2,7 +2,7 @@
 
 **The rule (as decided 21 Sep 2026):**
 - Students sign in with Google. Any `@srisriuniversity.edu.in` account is accepted; every other domain is rejected server-side.
-- A student sees their timetable only after an admin maps them to a batch. Until then the dashboard says **"No class mapped — contact admin"**.
+- A student sees their timetable only after an admin maps them to a batch. Until then the dashboard says **"No classes are assigned to you yet — contact the ODL department"**.
 - Faculty and admins sign in with email + password only; Google is blocked for them.
 
 Everything in the portal for this is already built and deployed. What remains is creating a Google OAuth client and pasting two values into Supabase. Steps 1–7 need a **Google Workspace admin** for `srisriuniversity.edu.in` (or anyone allowed to create projects in Google Cloud for that organisation). Steps 8–10 need the Supabase dashboard.
@@ -39,14 +39,14 @@ Everything in the portal for this is already built and deployed. What remains is
 9. **Authentication → URL Configuration**:
    - Site URL: the address students will use (for now `http://localhost:3000`; later the real domain, e.g. `https://classes.srisriuniversity.edu.in`).
    - Redirect URLs: add `<site url>/auth/callback` for every address the app is served from. (`http://localhost:3000/auth/callback` and `http://localhost:3100/auth/callback` are already there.)
-10. Confirm these are still set (they were applied by script and should be): **Authentication → Sign In / Providers → "Allow new users to sign up" = OFF**; **Authentication → Hooks → Before User Created = enabled, `public.before_user_created_hook`**.
-    *"Sign up OFF" does not block students* — Google users at the university domain are admitted by the hook; the switch only stops random email/password sign-ups.
+10. Confirm these are set (applied by script): **Authentication → Sign In / Providers → "Allow new users to sign up" = ON** and **Authentication → Hooks → Before User Created = enabled, `public.before_user_created_hook`**.
+    The global switch must stay **ON**: when it is off, Supabase refuses a first-time Google student with "Signups not allowed for this instance" before our rules run. The hook is what decides who gets an account: university Google accounts yes, other domains no, email/password only when created by the admin (the Admin API stamps `app_metadata.provisioned_by`, which the public sign-up API cannot set).
 
 ## Part C — Try it (2 minutes)
 
 11. Open the portal → **Student sign in (Google)** → choose your `@srisriuniversity.edu.in` account.
     - First time: Google asks for consent once.
-    - You land on `/student`. If nobody has mapped you yet you see **"No class mapped — contact admin"** with your email.
+    - You land on `/student`. If nobody has mapped you yet you see **"No classes are assigned to you yet — contact the ODL department"** with your email.
 12. As admin, open **/admin/students** → the yellow **"Signed in but not mapped"** box lists you → enter roll number, choose batch → **Map to batch**. Refresh the student tab: timetable appears.
 13. Try a personal Gmail: Google may not even offer it (Internal app); if it does, the portal bounces it with *"Please sign in with your @srisriuniversity.edu.in account."*
 14. Try Google with a teacher's address (e.g. `anand.mishra@…`): rejected with *"Google sign-in is only available to students."*
@@ -57,8 +57,8 @@ Everything in the portal for this is already built and deployed. What remains is
 |---|---|---|
 | Google consent screen = Internal | Google Cloud | Google itself refuses accounts outside the Workspace |
 | `hd=srisriuniversity.edu.in` hint | `src/app/login/student/google-button.tsx` | pre-selects the university account in the chooser (hint only, never trusted) |
-| `before_user_created_hook` | DB function, enabled in Supabase Auth Hooks | rejects Google sign-ups outside the domain before the user exists |
-| `auth.users` insert trigger | DB | same rule, in case the hook is ever disabled |
+| `before_user_created_hook` | DB function, enabled in Supabase Auth Hooks | rejects Google sign-ups outside the domain, and any email/password sign-up not made by the admin API |
+| `auth.users` insert trigger | DB | Google-domain rule again, in case the hook is ever disabled |
 | `auth.users` after-insert trigger | DB | creates the `student` profile automatically (no batch) |
 | `auth.identities` insert trigger | DB | blocks Google on teacher/admin accounts and wrong-domain identities |
 | RLS | DB | an unmapped student can read nothing; mapping (`students` row) turns everything on |

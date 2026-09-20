@@ -14,7 +14,7 @@ insert into auth.users
 values
   ('c0000000-0000-4000-8000-000000000099', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
    'akshat.s@srisriuniversity.edu.in', null, now(),
-   '{"provider":"email","providers":["email"],"role":"student","provisioned_by":"demo"}', '{"full_name":"Akshat S"}', now(), now(), '', '', '', '', false, false)
+   '{"provider":"email","providers":["email"],"provisioned_by":"demo","role":"student"}', '{"full_name":"Akshat S"}', now(), now(), '', '', '', '', false, false)
 on conflict (id) do nothing;
 
 insert into public.profiles (id, role, full_name, email) values
@@ -41,7 +41,7 @@ insert into auth.users
 values
   ('a0000000-0000-4000-8000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
    'demo.admin@srisriuniversity.edu.in', extensions.crypt('DemoAdmin12345', extensions.gen_salt('bf')), now(),
-   '{"provider":"email","providers":["email"],"role":"admin","must_change_password":false}', '{"full_name":"Demo Admin"}', now(), now(), '', '', '', '', false, false)
+   '{"provider":"email","providers":["email"],"provisioned_by":"seed","role":"admin","must_change_password":false}', '{"full_name":"Demo Admin"}', now(), now(), '', '', '', '', false, false)
 on conflict (id) do nothing;
 
 insert into public.profiles (id, role, full_name, email) values
@@ -74,7 +74,7 @@ with people(id, name, email, roll, batch) as (
   insert into auth.users (id, instance_id, aud, role, email, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
                           confirmation_token, recovery_token, email_change, email_change_token_new, is_sso_user, is_anonymous)
   select id::uuid, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', email, now(),
-         '{"provider":"email","providers":["email"],"role":"student"}', jsonb_build_object('full_name', name), now(), now(), '', '', '', '', false, false
+         '{"provider":"email","providers":["email"],"provisioned_by":"seed","role":"student"}', jsonb_build_object('full_name', name), now(), now(), '', '', '', '', false, false
   from people
   on conflict (id) do nothing
   returning id

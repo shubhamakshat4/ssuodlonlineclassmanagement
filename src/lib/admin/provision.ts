@@ -43,19 +43,21 @@ export async function provisionUser(input: ProvisionInput): Promise<string> {
     if (error || !data.user) throw new ActionError(userCreateError(error?.message, email));
     userId = data.user.id;
   } else {
-    const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-      data: { full_name: input.fullName },
-      redirectTo: `${siteUrl()}/auth/callback?next=${encodeURIComponent('/account/password')}`,
+    // Created with a random password the person never sees; the "set your password" email that
+    // follows is the invite. app_metadata is stamped at creation so the DB guard admits the row.
+    const { data, error } = await admin.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      password: randomPassword(),
+      user_metadata: { full_name: input.fullName },
+      app_metadata: { role: input.role, must_change_password: true, provisioned_by: 'admin' },
     });
     if (error || !data.user) throw new ActionError(userCreateError(error?.message, email));
     userId = data.user.id;
-    const { error: metaError } = await admin.auth.admin.updateUserById(userId, {
-      app_metadata: { role: input.role, must_change_password: true, provisioned_by: 'admin' },
+    const { error: mailError } = await admin.auth.resetPasswordForEmail(email, {
+      redirectTo: `${siteUrl()}/auth/callback?next=${encodeURIComponent('/account/password')}`,
     });
-    if (metaError) {
-      await admin.auth.admin.deleteUser(userId);
-      throw new ActionError(`Could not flag the account for first-login password change: ${metaError.message}`);
-    }
+    if (mailError) console.error('invite email failed', mailError.message);
   }
 
   const { error: profileError } = await admin
@@ -71,16 +73,10 @@ export async function provisionUser(input: ProvisionInput): Promise<string> {
 /** Re-send the invite/magic link for a staff account (or a recovery link if already accepted). */
 export async function resendInvite(userId: string, email: string) {
   const admin = createAdminClient();
-  const { error } = await admin.auth.admin.inviteUserByEmail(email, {
+  const { error } = await admin.auth.resetPasswordForEmail(email, {
     redirectTo: `${siteUrl()}/auth/callback?next=${encodeURIComponent('/account/password')}`,
   });
-  if (error) {
-    // Already-accepted invites cannot be re-sent; fall back to a password recovery email.
-    const { error: recoveryError } = await admin.auth.resetPasswordForEmail(email, {
-      redirectTo: `${siteUrl()}/auth/callback?next=${encodeURIComponent('/account/password')}`,
-    });
-    if (recoveryError) throw new ActionError(recoveryError.message);
-  }
+  if (error) throw new ActionError(error.message);
   await admin.auth.admin.updateUserById(userId, { app_metadata: { must_change_password: true } });
 }
 
@@ -96,6 +92,12 @@ export async function updateUserEmail(userId: string, email: string) {
   const admin = createAdminClient();
   const { error } = await admin.auth.admin.updateUserById(userId, { email: email.toLowerCase(), email_confirm: true });
   if (error) throw new ActionError(error.message);
+}
+
+function randomPassword() {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('') + 'Aa1';
 }
 
 function userCreateError(message: string | undefined, email: string) {

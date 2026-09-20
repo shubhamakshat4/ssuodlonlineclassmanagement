@@ -486,12 +486,20 @@ describe('auth guards (any @domain Google account may sign in; batch mapping dec
     expect(msg).toMatch(/srisriuniversity.edu.in/);
   });
 
-  it('admin-created email users get no automatic profile (the app provisions them)', async () => {
+  it('admin-created email users (app_metadata.provisioned_by) are allowed and get no automatic profile', async () => {
     const [u] = await db.sudo<{ id: string }>(
       `insert into auth.users (id, email, raw_app_meta_data, created_at, updated_at)
-       values (gen_random_uuid(), 'new.teacher@srisriuniversity.edu.in', '{"provider":"email","providers":["email"]}', now(), now()) returning id`,
+       values (gen_random_uuid(), 'new.teacher@srisriuniversity.edu.in', '{"provider":"email","providers":["email"],"provisioned_by":"admin"}', now(), now()) returning id`,
     );
     expect(await db.sudo('select id from profiles where id = $1', [u.id])).toHaveLength(0);
+  });
+
+  it('self-service email/password sign-ups are rejected by the auth hook (no provisioned_by stamp)', async () => {
+    const [h] = await db.sudo<{ r: { error?: { http_code: number; message: string } } }>(
+      `select before_user_created_hook('{"user":{"email":"rogue@srisriuniversity.edu.in","app_metadata":{"provider":"email"}}}') as r`,
+    );
+    expect(h.r.error?.http_code).toBe(403);
+    expect(h.r.error?.message).toMatch(/created by the ODL office/i);
   });
 
   it('blocks the Google provider for teacher and admin accounts', async () => {
@@ -536,7 +544,7 @@ describe('auth guards (any @domain Google account may sign in; batch mapping dec
     expect(wrong.r.error?.http_code).toBe(403);
     expect(wrong.r.error?.message).toMatch(/srisriuniversity.edu.in/);
     const [e] = await db.sudo<{ r: Record<string, unknown> }>(
-      `select before_user_created_hook('{"user":{"email":"t@srisriuniversity.edu.in","app_metadata":{"provider":"email"}}}') as r`,
+      `select before_user_created_hook('{"user":{"email":"t@srisriuniversity.edu.in","app_metadata":{"provider":"email","provisioned_by":"admin"}}}') as r`,
     );
     expect(e.r).toEqual({});
   });
