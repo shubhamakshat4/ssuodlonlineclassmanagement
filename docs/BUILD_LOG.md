@@ -167,3 +167,15 @@ One entry per phase. Newest at the bottom.
   audit actor forgery); `docs/RUNBOOK.md`, `docs/TEST_REPORT.md`, `docs/MANUAL_VERIFICATION.md`, README.
 - Tested: 142 tests / 17 files green; lint, typecheck, build green.
 - Skipped: nothing in scope. Cloud deployment + real-tenant checks remain for a human (B1, B2).
+
+## Post-build — cloud deployment of the schema + demo data (20 Sep 2026)
+- Applied all migrations to the live project with a new runner (`scripts/db-migrate.ts`, `npm run db:migrate`;
+  the direct DB host is IPv6-only from this machine, so it uses the IPv4 session pooler). Cron + pg_net live.
+- Demo data: `supabase/demo/demo.sql` + `scripts/demo-seed.ts` (`npm run demo:seed`): base seed, demo owner
+  as a Google-sign-in student, 8 more students, 4 more slots, 21 days of generated sessions with editable
+  placeholder Teams links; `npm run demo:reset-links` for go-live. One failed-sync example kept.
+- Verified against the real stack: `npm run smoke:cloud` 15/15; Playwright `e2e/demo-walkthrough.spec.ts`
+  3/3 (admin screens, teacher override/revert, role bouncing) on `next start` against the cloud DB.
+- Fixed while verifying: the post-revert confirmation vanished with the form (now a persistent state-derived
+  note on the teacher session page); scripts now load `.env.local`.
+- Wrote `docs/IT_REQUEST_EMAIL.md` (step-by-step request for Microsoft 365 + Google) and `docs/DEMO.md`.

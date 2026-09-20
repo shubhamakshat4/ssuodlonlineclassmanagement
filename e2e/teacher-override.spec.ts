@@ -45,9 +45,9 @@ test.describe('teacher link override journey', () => {
     await popup.close();
 
     // Revert re-queues a Teams meeting
-    await teacher.getByRole('button', { name: /Revert to auto-generated Teams link/ }).click();
     teacher.once('dialog', (d) => d.accept());
-    await expect(teacher.getByText(/Reverted/)).toBeVisible();
+    await teacher.getByRole('button', { name: /Revert to auto-generated Teams link/ }).click();
+    await expect(teacher.getByTestId('reverted-note')).toBeVisible({ timeout: 20_000 });
     const { data: after } = await admin.from('class_sessions').select('provider, sync_status, join_url_override').eq('id', SEED.liveSessionId).single();
     expect(after).toMatchObject({ provider: 'teams', sync_status: 'pending', join_url_override: null });
 

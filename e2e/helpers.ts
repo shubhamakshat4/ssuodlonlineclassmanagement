@@ -6,6 +6,8 @@
  * with the Admin API and open it — the session that results is identical to a Google one for the app.
  */
 import 'dotenv/config';
+import { config as dotenvConfig } from 'dotenv';
+dotenvConfig({ path: '.env.local' });
 import { createClient } from '@supabase/supabase-js';
 import type { Page } from '@playwright/test';
 

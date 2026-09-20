@@ -11,7 +11,7 @@
  *
  * Appends a report to docs/GRAPH_SPIKE_LOG.md.
  */
-import 'dotenv/config';
+import './_env';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createGraphClient, GraphError, hasRealGraphCredentials, type GraphCallLog, type GraphClient, type GraphEnv } from '../supabase/functions/_shared/graph/index.ts';

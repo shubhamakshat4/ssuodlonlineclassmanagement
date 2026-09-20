@@ -7,7 +7,7 @@ are created automatically and recordings are streamed from the university's OneD
 - Spec: [`SPEC.md`](SPEC.md) · Conventions: [`CLAUDE.md`](CLAUDE.md)
 - Progress: [`docs/BUILD_LOG.md`](docs/BUILD_LOG.md) · Decisions: [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md) · Open items: [`docs/BLOCKERS.md`](docs/BLOCKERS.md)
 - Operate: [`docs/RUNBOOK.md`](docs/RUNBOOK.md) · Verify by hand: [`docs/MANUAL_VERIFICATION.md`](docs/MANUAL_VERIFICATION.md) · Tests: [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md)
-- Microsoft 365 prerequisites: [`docs/M365_SETUP.md`](docs/M365_SETUP.md)
+- Microsoft 365 prerequisites: [`docs/M365_SETUP.md`](docs/M365_SETUP.md) · Email for IT: [`docs/IT_REQUEST_EMAIL.md`](docs/IT_REQUEST_EMAIL.md) · Demo: [`docs/DEMO.md`](docs/DEMO.md)
 
 ## Quick start
 ```bash
@@ -16,6 +16,9 @@ npm ci
 npm run dev                        # http://localhost:3000
 npm test                           # unit + RLS suite (embedded Postgres, no Docker needed)
 npm run lint && npm run typecheck && npm run build
+npm run db:migrate             # apply migrations to SUPABASE_DB_URL (cloud)
+npm run demo:seed              # load demo data (never on production)
+npm run smoke:cloud            # live-stack checks with the anon key
 ```
 Local Supabase (needs Docker): `supabase start && supabase db reset` seeds fake data —
 admin `odl.admin@srisriuniversity.edu.in` / `AdminPass12345`, teachers `TeacherPass12345`.

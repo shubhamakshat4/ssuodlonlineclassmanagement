@@ -68,6 +68,11 @@ export default async function TeacherSessionPage({ params }: { params: Promise<{
                 )}
                 {s.has_override && s.override_set_at ? <div className="mt-1 text-xs text-muted-foreground">Override set {formatIst(s.override_set_at)}</div> : null}
               </div>
+              {!s.has_override && s.provider === 'teams' && s.sync_status === 'pending' && editable ? (
+                <Alert variant="info" data-testid="reverted-note">
+                  Reverted to the auto-generated Teams link. A fresh meeting is being created (usually within 10 minutes); until then students see “Link not ready yet”.
+                </Alert>
+              ) : null}
               {!editable ? (
                 <Alert>This class has {s.status === 'cancelled' ? 'been cancelled' : 'ended'}; the link can no longer be changed.</Alert>
               ) : (
