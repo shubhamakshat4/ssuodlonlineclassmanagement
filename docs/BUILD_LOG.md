@@ -132,3 +132,17 @@ One entry per phase. Newest at the bottom.
   `e2e/teacher-override.spec.ts` written (teacher sets link → DB side effects + audit → student sees
   "Link updated" and joins via the new URL → revert re-queues) — not executed (B2).
 - Skipped: nothing.
+
+## Phase 10 — recordings: harvest, playback, student tab, expiry — done
+- Built: migration `…000900_recordings_jobs.sql` (`v_sessions_awaiting_recording`, `expire_recordings()`,
+  hourly + daily cron); job `_shared/jobs/harvest-recordings.ts` (primary: meeting recordings API +
+  OneDrive folder match by window/subject; fallback: folder-only after 6 h, when no meeting id, or in
+  `GRAPH_RECORDING_MODE=manual`; `expires_at = recorded_at + retention`), Edge Functions
+  `cron-harvest-recordings`, `cron-expire-recordings`, `recording-play` (JWT → authorisation by reading
+  `recordings` **as the caller** so RLS is the single rule set → Graph downloadUrl → 302, playback audited);
+  Next proxy `/api/recordings/{id}/play` forwards the user's token and relays the 302; student
+  `/student/recordings` (days remaining) and `/student/recordings/[id]` inline `<video>` player.
+- Tested: `tests/unit/harvest.test.ts` (folder matching, primary path, 6 h fallback, manual mode, per-session
+  errors), `tests/db/recordings.test.ts` (awaiting view semantics, visibility after harvest, expiry flip
+  + privileges, cross-batch isolation). All 16 test files green; lint/typecheck/build green.
+- Skipped: real OneDrive/Graph behaviour (B1); Edge Functions not deployed (B2).

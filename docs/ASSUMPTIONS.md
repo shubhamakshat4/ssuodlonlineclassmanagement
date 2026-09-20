@@ -78,3 +78,10 @@ Every decision the spec did not make. Format: what — why — cost to change la
 - The "Link updated" badge is derived from `join_url_override is not null` (`has_override` in the view) and therefore disappears when the teacher reverts. — Simplest truthful signal; no extra column. — Low.
 - While a reverted session waits for its fresh Teams meeting (≤10 min), students see "Link not ready yet" and Join is disabled. — Honest state; alternative would be to keep the old link, but that meeting is being deleted. — Low.
 - The topic is editable by the teacher (spec lists `topic` among the teacher-editable columns). — Convenience. — Trivial.
+
+## Phase 10 — recordings
+- Graph's `onlineMeetings/{id}/recordings` gives metadata but not a drive item id; the file is located by scanning the service account's `/Recordings` folder for a file created between (start − 15 min) and (end + 6 h) whose name contains the subject name. Names like "Subject — Batch-YYYYMMDD_HHMM-Meeting Recording.mp4" are the Teams default. — Practical way to get `driveId/driveItemId` for the download URL. — Medium: adjust `matchDriveItem` if the tenant names files differently (verify in the spike).
+- Playback authorisation reuses the `recordings` RLS policy by querying as the caller inside the Edge Function. — One rule set (§5) for reading and playing. — Low.
+- The browser reaches `recording-play` through the Next.js proxy `/api/recordings/{id}/play` because a navigation cannot carry the JWT header; the proxy relays the 302 and caches nothing. — Keeps §8 intact (no re-hosting, no stored URLs). — Low.
+- Sessions still without a recording 48 h after ending simply drop out of the harvest view (no `failed` row is written). — Keeps the table honest; admins can see gaps in reports. — Low.
+- Retention days come from `app_settings.recording_retention_days` (30). — Single config. — Trivial.
