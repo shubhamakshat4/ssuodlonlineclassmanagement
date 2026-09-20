@@ -53,3 +53,10 @@ Every decision the spec did not make. Format: what — why — cost to change la
 - `status='completed'` is set automatically for scheduled sessions once `scheduled_end < now()` (run at the start of every cron job and "Generate now"). The spec never says who sets `completed`; the harvester needs it. — Required for §7.4. — Low.
 - Cron → Edge Function calls read `project_url` and `service_role_key` from Supabase Vault; the migration is inert when pg_net/Vault/pg_cron are absent. — Portable migrations; no secrets in SQL. — Low; documented in the runbook.
 - pg_cron runs in UTC on Supabase, so 01:00 IST is scheduled as `30 19 * * *`. — Fact of the platform. — Trivial.
+
+## Phase 6 — Graph
+- `GRAPH_MODE` (`real`|`mock`) selects the client; `real` without credentials throws instead of silently mocking. — Production must never run on the mock unnoticed. — Trivial.
+- `GRAPH_RECORDING_MODE` (`auto` default | `manual`) tells the provisioner whether to request `recordAutomatically`; when the tenant rejects it at runtime the sequence retries once without it and stores the error in `sync_error` (session still `provisioned`). — Implements the §7.2 fallback without failing the class. — Low.
+- Teacher `entra_user_id` is resolved from the UPN via Graph on first provisioning and cached on `teachers`. — Spec column exists for this. — Trivial.
+- Step 2 (`onlineMeetings?$filter=JoinWebUrl`) is retried up to 4× with a short delay because the meeting object can lag the event by a few seconds. — Observed Graph behaviour. — Trivial.
+- Windows time zone name mapping is a small table (`Asia/Kolkata` → `India Standard Time`). — Graph events want Windows zone names. — Trivial.

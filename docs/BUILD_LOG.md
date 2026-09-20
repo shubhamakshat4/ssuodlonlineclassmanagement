@@ -75,3 +75,16 @@ One entry per phase. Newest at the bottom.
   holidays skipped, generated rows visible only to the right people, cron helper inert without pg_net).
 - Skipped: Edge Function not deployed/executed (no Deno locally, B2) — its logic is the shared job, which
   the admin "Generate now" action runs through the same code path.
+
+## Phase 6 — Graph spike — partial (mock only, blocked by B1)
+- Built: Graph client interface + real implementation (token cache, throttle, backoff, logging) + mock with
+  failure modes (403 access policy, recordAutomatically rejected, 429, network); `runProvisionSequence`
+  (§7.2 steps 1→3 with automatic degrade when `recordAutomatically` is rejected); `scripts/graph-spike.ts`
+  (safe: `[TEST]` subject, service account as stand-in teacher unless `SPIKE_TEACHER_UPN`, cleanup in
+  `finally`, report appended to `docs/GRAPH_SPIKE_LOG.md`).
+- Tested: `tests/unit/graph.test.ts` — token caching, request body per spec, Retry-After/429 handling,
+  give-up after max attempts, no retry on 403, throttling, 404-on-delete tolerance, download URL, mock
+  sequence incl. idempotent transactionId and the recordAutomatically fallback. Spike executed against
+  the mock: all steps green, verdict "MOCK ONLY".
+- Skipped: the real-tenant run (no credentials). Proceeding to Phase 7 per the operating rules with both
+  the primary and fallback recording paths implemented.
