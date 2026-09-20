@@ -34,3 +34,10 @@ Every decision the spec did not make. Format: what — why — cost to change la
 - After a successful sign-in the callback route signs the user straight back out when there is no active profile or when a Google session lands on a non-student profile. — Friendly error instead of an opaque database error (the DB triggers already block the link). — Trivial.
 - `next` redirect targets are restricted to same-origin relative paths (`safeNextPath`). — Open-redirect hygiene. — Trivial.
 - Invited teachers/admins get `must_change_password=true`; clearing it needs the service-role key on the Next.js server. — app_metadata is admin-only by design. — Low.
+
+## Phase 3 — admin CRUD
+- Students are created with `auth.admin.createUser({ email_confirm: true })` and **no password**; teachers/admins with `auth.admin.inviteUserByEmail` (magic-link invite) + `must_change_password`. — Matches §6 "invite email, force password change". — Low.
+- Bulk CSV import is per-row (errors reported, valid rows created, existing emails skipped) rather than all-or-nothing. — Practical for 200-row files with one typo. — Low.
+- Deleting a teacher is refused while they have sessions; deactivating is the normal path. Deleting a student cascades (auth user → profile → student → attendance). — Referential safety. — Low.
+- Subject codes/batch codes are upper-cased and restricted to `[A-Z0-9_-]`. — Clean joins with CSV `batch_code`. — Trivial.
+- `NEXT_PUBLIC_SITE_URL` env added (invite/callback links). — Needed to build redirect URLs server-side. — Trivial.

@@ -40,3 +40,14 @@ One entry per phase. Newest at the bottom.
 - Tested: `tests/unit/auth.test.ts` (route decisions, open-redirect protection, password policy). Lint,
   typecheck, build green. DB-side guards were covered in Phase 1.
 - Skipped: live Google sign-in (needs the cloud project configured — B2).
+
+## Phase 3 — admin CRUD — done
+- Built: `formAction()` helper (role check + zod + friendly DB errors + revalidate) and a reusable `ActionForm`;
+  screens for programmes, batches (+ batch detail: subjects per semester, teacher assignment, roster),
+  subjects, students (list/filter, create, edit, delete, **bulk CSV import** with per-row report), teachers
+  (create + invite email, edit, resend invite/reset, delete guard, assignments), admin overview tiles.
+  `src/lib/admin/provision.ts` creates auth user + profile atomically (rolls back on failure).
+  Shared IST time helpers in `supabase/functions/_shared/time.ts` (Deno + Node), CSV parser.
+- Tested: unit tests for CSV parsing and timezone maths (IST + a DST zone to prove it is not offset
+  arithmetic). Lint/typecheck/build green. Admin RLS paths covered by the Phase 1 suite.
+- Skipped: nothing. Live user creation needs the service-role key (B2).
