@@ -46,3 +46,10 @@ Every decision the spec did not make. Format: what — why — cost to change la
 - Clash = same weekday, overlapping `[start,end)` times, overlapping effective date ranges, and same teacher **or** same batch (via `batch_subjects.batch_id`). Back-to-back slots are fine. — Spec says "same teacher or same batch double-booked". — Low.
 - Editing/deactivating a slot or adding a holiday does **not** retroactively cancel sessions already generated (admins do that under Sessions). — Avoids surprising deletions of provisioned meetings; the 21-day horizon keeps exposure small. — Medium; could add a "cancel future sessions of this slot" action.
 - Deleting a slot sets `timetable_slot_id = null` on its sessions (FK `on delete set null`), which turns them into ad-hoc sessions. — Preserves history/attendance. — Low.
+
+## Phase 5 — session generation
+- Expansion is implemented once in TypeScript (`_shared/timetable.ts`) and used by both the Edge Function and the admin "Generate now" action, rather than as a SQL function. — One implementation, unit-testable, spec asks for unit tests on expansion. — Low.
+- Generation starts from **today (IST)** and covers `horizon` days inclusive; sessions whose time has already passed today may be generated and are immediately marked `completed` by `completePastSessions`. — Simplicity; nightly run at 01:00 makes this moot. — Trivial.
+- `status='completed'` is set automatically for scheduled sessions once `scheduled_end < now()` (run at the start of every cron job and "Generate now"). The spec never says who sets `completed`; the harvester needs it. — Required for §7.4. — Low.
+- Cron → Edge Function calls read `project_url` and `service_role_key` from Supabase Vault; the migration is inert when pg_net/Vault/pg_cron are absent. — Portable migrations; no secrets in SQL. — Low; documented in the runbook.
+- pg_cron runs in UTC on Supabase, so 01:00 IST is scheduled as `30 19 * * *`. — Fact of the platform. — Trivial.

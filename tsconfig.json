@@ -31,5 +31,5 @@
     "*.config.ts",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "supabase/functions/**/index.ts", "supabase/functions/_shared/deno.ts"]
+  "exclude": ["node_modules", "supabase/functions/**/index.ts", "supabase/functions/_shared/deno/**"]
 }

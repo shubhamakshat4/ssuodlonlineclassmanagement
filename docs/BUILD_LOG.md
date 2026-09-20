@@ -62,3 +62,16 @@ One entry per phase. Newest at the bottom.
   batch clash, back-to-back OK, disjoint date ranges OK, inactive ignored, re-check on update, holiday
   uniqueness). All suites green; lint/typecheck/build green.
 - Skipped: nothing.
+
+## Phase 5 — cron-generate-sessions — done
+- Built: `supabase/functions/_shared/timetable.ts` (`expandSlots`, pure, timezone-correct), the job
+  `_shared/jobs/generate-sessions.ts` (loads slots/holidays/settings, upserts with `ignoreDuplicates`,
+  audits; also `completePastSessions`), Edge Function `cron-generate-sessions` (service-role bearer check),
+  Deno runtime helpers, cron infrastructure migration (`invoke_edge_function` via pg_net + Vault, pg_cron
+  schedule 19:30 UTC = 01:00 IST, all guarded), admin `/admin/sessions` (browse/filter, cancel, reschedule,
+  add extra class, retry, **Generate sessions now** using the same job with the service-role client).
+- Tested: `tests/unit/timetable.test.ts` (IST instants, zone-vs-UTC calendar day, holidays global/batch,
+  effective ranges, inactive, determinism), `tests/db/generation.test.ts` (idempotent insert, seeded
+  holidays skipped, generated rows visible only to the right people, cron helper inert without pg_net).
+- Skipped: Edge Function not deployed/executed (no Deno locally, B2) — its logic is the shared job, which
+  the admin "Generate now" action runs through the same code path.
