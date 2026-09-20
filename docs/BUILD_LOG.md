@@ -118,3 +118,17 @@ One entry per phase. Newest at the bottom.
   validation). Attendance trigger/RLS behaviour was covered in Phase 1. Playwright `e2e/student-join.spec.ts`
   written (magic-link sign-in as the Google stand-in) — not executed (B2).
 - Skipped: nothing.
+
+## Phase 9 — teacher dashboard, timetable, join, link override — done
+- Built: `/teacher` (today with Join + "Edit link / roster"), `/teacher/upcoming` (3 weeks grouped by day),
+  `/teacher/timetable` (weekly grid of own slots), `/teacher/sessions/[id]` (effective link, override form
+  with live https validation + host warning + the mandatory "Recording will not be available" warning,
+  Revert to auto-generated Teams link, topic, roster with who clicked Join). Server actions
+  `setOverride`/`clearOverride`/`updateTopic` run as the caller so the RLS policy + trigger enforce
+  ownership, the time limit, the https rule, `provider='custom'`, `teams_join_url=null`, audit rows and
+  the re-queue on revert. Admins get the same override/revert controls inline on `/admin/sessions`.
+- Tested: DB rules covered in Phase 1 (`rls.test.ts`: override side effects, spoofing, colleague, ended
+  class, non-https, revert re-queue, admin actor). Unit: `validateOverrideUrl`. Playwright
+  `e2e/teacher-override.spec.ts` written (teacher sets link → DB side effects + audit → student sees
+  "Link updated" and joins via the new URL → revert re-queues) — not executed (B2).
+- Skipped: nothing.

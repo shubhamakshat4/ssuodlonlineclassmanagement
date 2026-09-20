@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { Batch, BatchSubject, ClassSessionView, Profile, Subject } from '@/lib/db/types';
 import { addDays, formatIst, istDate, istTime } from '@/lib/domain/time';
 import { addExtraClass, cancelSession, generateNow, rescheduleSession, retrySession } from './actions';
+import { clearOverride, setOverride } from '../../teacher/sessions/actions';
 
 export const metadata = { title: 'Sessions — Admin' };
 
@@ -156,7 +157,16 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
                               <Input name="end_time" type="time" step={300} defaultValue={istTime(new Date(s.scheduled_end))} className="w-28" aria-label="End" />
                               <Input name="topic" defaultValue={s.topic ?? ''} placeholder="Topic" className="w-40" aria-label="Topic" />
                             </ActionForm>
+                            <ActionForm action={setOverride} inline submitLabel={s.has_override ? 'Update link' : 'Override link'} variant="outline">
+                              <input type="hidden" name="id" value={s.id} />
+                              <Input name="url" type="url" defaultValue={s.join_url_override ?? ''} placeholder="https://… (Zoom / Meet / Teams)" className="w-72" aria-label="Override link" />
+                            </ActionForm>
                             <div className="flex gap-2">
+                              {s.has_override ? (
+                                <ActionForm action={clearOverride} inline submitLabel="Revert to Teams" variant="ghost">
+                                  <input type="hidden" name="id" value={s.id} />
+                                </ActionForm>
+                              ) : null}
                               {s.sync_status === 'failed' ? (
                                 <ActionForm action={retrySession} inline submitLabel="Retry" variant="secondary">
                                   <input type="hidden" name="id" value={s.id} />

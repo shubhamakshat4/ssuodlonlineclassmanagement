@@ -73,3 +73,8 @@ Every decision the spec did not make. Format: what — why — cost to change la
 - The attendance insert is an upsert with `ignoreDuplicates`, so a second click is a no-op (unique on session+student). — §10. — Trivial.
 - The Join button opens a blank tab synchronously and navigates it after the API call. — Browsers block `window.open` after an `await`. — Trivial.
 - E2E student sign-in uses an Admin-API magic link instead of Google (cannot be automated). — Same session shape for the app. — None.
+
+## Phase 9 — teacher override
+- The "Link updated" badge is derived from `join_url_override is not null` (`has_override` in the view) and therefore disappears when the teacher reverts. — Simplest truthful signal; no extra column. — Low.
+- While a reverted session waits for its fresh Teams meeting (≤10 min), students see "Link not ready yet" and Join is disabled. — Honest state; alternative would be to keep the old link, but that meeting is being deleted. — Low.
+- The topic is editable by the teacher (spec lists `topic` among the teacher-editable columns). — Convenience. — Trivial.
