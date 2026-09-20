@@ -17,7 +17,7 @@ export function LoginForm({ next, initialError }: { next: string; initialError?:
         <Input id="password" name="password" type="password" autoComplete="current-password" required minLength={1} />
       </Field>
       {state?.error ? <Alert variant="destructive">{state.error}</Alert> : null}
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" disabled={pending} size="lg" className="w-full">
         {pending ? 'Signing in…' : 'Sign in'}
       </Button>
     </form>

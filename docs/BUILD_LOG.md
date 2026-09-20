@@ -200,3 +200,13 @@ One entry per phase. Newest at the bottom.
   `before_user_created_hook` (Google@domain yes, other domains no, email/password only via Admin API stamp).
   Verified live: public `signUp` refused with the ODL-office message, admin `createUser` OK, unmapped Google
   student sees "No classes are assigned to you yet — contact the ODL department".
+
+## UI pass (21 Sep 2026)
+- One design system for all roles: warm cream canvas, ink text, saffron primary, teal "live" accent
+  (`globals.css` tokens); refined primitives (inputs, selects, cards, badges, alerts with icons, tables,
+  page headers with eyebrows, empty states, stat tiles); app shell with brand mark, role-aware subtitle,
+  active navigation, avatar chip; shared `AuthFrame` for landing/login/error/password; `SessionCard` with
+  time column and live-now treatment; `DayGroup` timeline for upcoming lists; admin overview with stat
+  tiles, today's classes and quick actions; recordings as cards. No functional changes.
+- Verified: screenshots of landing, logins, student home (live class), recordings, teacher today/upcoming,
+  admin overview/students/sync; all 8 Playwright journeys pass against the restyled app; lint/typecheck OK.

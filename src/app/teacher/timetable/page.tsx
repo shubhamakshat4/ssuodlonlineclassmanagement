@@ -21,7 +21,7 @@ export default async function TeacherTimetablePage() {
 
   return (
     <>
-      <PageHeader title="Weekly timetable" description="Your recurring slots (IST). Actual sessions, holidays and one-off classes are on the Today and Upcoming pages." />
+      <PageHeader eyebrow="Faculty" title="Weekly timetable" description="Your recurring slots (IST). Actual sessions, holidays and one-off classes are on the Today and Upcoming pages." />
       {slots.length === 0 ? (
         <EmptyState>No timetable slots assigned to you yet.</EmptyState>
       ) : (
@@ -29,13 +29,13 @@ export default async function TeacherTimetablePage() {
           <CardContent className="pt-5">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-7">
               {DAY_ORDER.map((d) => (
-                <div key={d} className="rounded-md border border-border p-2">
+                <div key={d} className="rounded-lg border border-border bg-surface-muted p-2">
                   <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">{DAY_SHORT[d]}</div>
                   <div className="grid gap-2">
                     {slots
                       .filter((s) => s.day_of_week === d)
                       .map((s) => (
-                        <div key={s.id} className="rounded border border-primary/30 bg-primary/5 p-2 text-xs">
+                        <div key={s.id} className="rounded-lg border border-primary/20 bg-primary-soft p-2.5 text-xs">
                           <div className="font-mono">
                             {hhmm(s.start_time)}–{hhmm(s.end_time)}
                           </div>

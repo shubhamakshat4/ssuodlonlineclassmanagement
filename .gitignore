@@ -39,3 +39,4 @@ supabase/.branches/
 .DS_Store
 *.swp
 .vercel
+_shots/

@@ -17,7 +17,7 @@ export default async function HolidaysPage() {
 
   return (
     <>
-      <PageHeader title="Holidays" description="No sessions are generated on a holiday. A holiday without a batch applies to everyone." />
+      <PageHeader eyebrow="Administration" title="Holidays" description="No sessions are generated on a holiday. A holiday without a batch applies to everyone." />
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <Card>
           <CardContent className="pt-5">

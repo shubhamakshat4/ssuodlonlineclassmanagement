@@ -17,7 +17,7 @@ export function PasswordForm() {
         <Input id="confirm" name="confirm" type="password" autoComplete="new-password" minLength={PASSWORD_MIN_LENGTH} required />
       </Field>
       {state?.error ? <Alert variant="destructive">{state.error}</Alert> : null}
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" disabled={pending} size="lg" className="w-full">
         {pending ? 'Saving…' : 'Save password'}
       </Button>
     </form>

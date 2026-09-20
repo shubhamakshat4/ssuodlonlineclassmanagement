@@ -21,7 +21,7 @@ export default async function TeachersPage() {
 
   return (
     <>
-      <PageHeader title="Teachers" description="Faculty accounts. Teachers sign in with email + password and are added to Teams meetings as co-organiser." />
+      <PageHeader eyebrow="Administration" title="Teachers" description="Faculty accounts. Teachers sign in with email + password and are added to Teams meetings as co-organiser." />
       <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
         <Card>
           <CardContent className="pt-5">
@@ -38,9 +38,9 @@ export default async function TeachersPage() {
               <TBody>
                 {((teachers ?? []) as Row[]).map((t) => (
                   <TR key={t.id}>
-                    <TD className="font-mono">{t.employee_code}</TD>
+                    <TD className="whitespace-nowrap font-mono">{t.employee_code}</TD>
                     <TD>
-                      <Link href={`/admin/teachers/${t.id}`} className="text-primary underline">
+                      <Link href={`/admin/teachers/${t.id}`} className="font-medium text-primary hover:underline">
                         {t.profiles.full_name}
                       </Link>
                       {!t.profiles.is_active ? (

@@ -20,7 +20,7 @@ export default async function TimetablePage({ searchParams }: { searchParams: Pr
   if (!batch) {
     return (
       <>
-        <PageHeader title="Timetable" />
+        <PageHeader eyebrow="Administration" title="Timetable" />
         <EmptyState>Create a batch first.</EmptyState>
       </>
     );
@@ -78,13 +78,13 @@ export default async function TimetablePage({ searchParams }: { searchParams: Pr
           <CardContent>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-7">
               {DAY_ORDER.map((d) => (
-                <div key={d} className="rounded-md border border-border p-2">
+                <div key={d} className="rounded-lg border border-border bg-surface-muted p-2">
                   <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">{DAY_SHORT[d]}</div>
                   <div className="grid gap-2">
                     {slots
                       .filter((s) => s.day_of_week === d)
                       .map((s) => (
-                        <div key={s.id} className={`rounded border p-2 text-xs ${s.is_active ? 'border-primary/30 bg-primary/5' : 'border-border bg-muted opacity-60'}`}>
+                        <div key={s.id} className={`rounded-lg border p-2.5 text-xs ${s.is_active ? 'border-primary/20 bg-primary-soft' : 'border-border bg-muted opacity-60'}`}>
                           <div className="font-mono">
                             {hhmm(s.start_time)}–{hhmm(s.end_time)}
                           </div>

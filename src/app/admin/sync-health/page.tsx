@@ -1,6 +1,7 @@
 import { ActionForm } from '@/components/action-form';
 import { SyncBadge } from '@/components/session-badges';
-import { Alert, Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, PageHeader, Table, TBody, TD, TH, THead, TR } from '@/components/ui/primitives';
+import { Activity, AlertTriangle, Clock, Radio } from 'lucide-react';
+import { Alert, Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, PageHeader, Stat, Table, TBody, TD, TH, THead, TR } from '@/components/ui/primitives';
 import { createClient } from '@/lib/supabase/server';
 import type { AuditLog, ClassSessionView } from '@/lib/db/types';
 import { formatIst } from '@/lib/domain/time';
@@ -30,6 +31,7 @@ export default async function SyncHealthPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Administration"
         title="Sync health"
         description="Teams meeting provisioning status. The provisioner runs every 10 minutes; failures land here after 5 attempts."
         actions={
@@ -40,10 +42,10 @@ export default async function SyncHealthPage() {
         }
       />
       <div className="grid gap-4 sm:grid-cols-4">
-        <Stat label="Pending" value={pendingRes.count ?? 0} />
-        <Stat label="Provisioning (in flight)" value={provisioningRes.count ?? 0} />
-        <Stat label="Failed" value={failedRows.length} warn={failedRows.length > 0} />
-        <Stat label="Graph mode (this server)" text={graphMode} warn={graphMode !== 'real'} />
+        <Stat label="Pending" value={pendingRes.count ?? 0} icon={Clock} />
+        <Stat label="Provisioning" value={provisioningRes.count ?? 0} icon={Activity} hint="in flight" />
+        <Stat label="Failed" value={failedRows.length} icon={AlertTriangle} tone={failedRows.length > 0 ? 'warn' : 'good'} />
+        <Stat label="Graph mode" value={graphMode} icon={Radio} hint="this server" tone={graphMode === 'real' ? 'good' : 'warn'} />
       </div>
 
       {stuckRows.length ? (
@@ -189,17 +191,6 @@ export default async function SyncHealthPage() {
         <SyncLegend />
       </div>
     </>
-  );
-}
-
-function Stat({ label, value, text, warn }: { label: string; value?: number; text?: string; warn?: boolean }) {
-  return (
-    <Card className={warn ? 'border-amber-300' : ''}>
-      <CardHeader>
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className="text-2xl">{text ?? value}</CardTitle>
-      </CardHeader>
-    </Card>
   );
 }
 

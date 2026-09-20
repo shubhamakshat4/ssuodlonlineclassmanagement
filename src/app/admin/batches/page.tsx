@@ -21,7 +21,7 @@ export default async function BatchesPage() {
 
   return (
     <>
-      <PageHeader title="Batches" description="An intake cohort of a programme. Students belong to exactly one batch." />
+      <PageHeader eyebrow="Administration" title="Batches" description="An intake cohort of a programme. Students belong to exactly one batch." />
       <div className="grid gap-6">
         <Card>
           <CardContent className="pt-5">
@@ -40,7 +40,7 @@ export default async function BatchesPage() {
               <TBody>
                 {((batches ?? []) as Batch[]).map((b) => (
                   <TR key={b.id}>
-                    <TD className="font-mono">{b.code}</TD>
+                    <TD className="whitespace-nowrap font-mono">{b.code}</TD>
                     <TD>
                       {b.name} {!b.is_active ? <Badge variant="secondary">inactive</Badge> : null}
                     </TD>
@@ -49,7 +49,7 @@ export default async function BatchesPage() {
                     <TD>{b.current_semester}</TD>
                     <TD>{studentCount.get(b.id) ?? 0}</TD>
                     <TD>
-                      <Link href={`/admin/batches/${b.id}`} className="text-primary underline">
+                      <Link href={`/admin/batches/${b.id}`} className="font-medium text-primary hover:underline">
                         Manage
                       </Link>
                     </TD>

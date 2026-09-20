@@ -31,6 +31,7 @@ export default async function AttendanceReportPage({ searchParams }: { searchPar
   return (
     <>
       <PageHeader
+        eyebrow="Administration"
         title="Attendance report"
         description="Portal joins per student per class. A tick means the student clicked Join Now inside the join window — not verified presence for the whole session."
         actions={exportHref && report && report.sessions.length ? <a href={exportHref} className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground">Download CSV</a> : null}

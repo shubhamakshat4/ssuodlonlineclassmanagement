@@ -29,7 +29,7 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <PageHeader title="Students" description={`Any @${appConfig.allowedStudentDomain} Google account can sign in; a student only sees classes once mapped to a batch here.`} />
+      <PageHeader eyebrow="Administration" title="Students" description={`Any @${appConfig.allowedStudentDomain} Google account can sign in; a student only sees classes once mapped to a batch here.`} />
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="grid gap-6">
           {unmapped.length ? (
@@ -97,9 +97,9 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
                 <TBody>
                   {rows.map((s) => (
                     <TR key={s.id}>
-                      <TD className="font-mono">{s.roll_number}</TD>
-                      <TD>
-                        <Link href={`/admin/students/${s.id}`} className="text-primary underline">
+                      <TD className="whitespace-nowrap font-mono">{s.roll_number}</TD>
+                      <TD className="whitespace-nowrap">
+                        <Link href={`/admin/students/${s.id}`} className="font-medium text-primary hover:underline">
                           {s.profiles.full_name}
                         </Link>
                         {!s.profiles.is_active ? (
@@ -109,7 +109,7 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
                         ) : null}
                       </TD>
                       <TD>{s.profiles.email}</TD>
-                      <TD className="font-mono">{batchById.get(s.batch_id)?.code ?? '—'}</TD>
+                      <TD className="whitespace-nowrap font-mono">{batchById.get(s.batch_id)?.code ?? '—'}</TD>
                       <TD>
                         <Badge variant={s.status === 'active' ? 'success' : 'secondary'}>{s.status}</Badge>
                       </TD>

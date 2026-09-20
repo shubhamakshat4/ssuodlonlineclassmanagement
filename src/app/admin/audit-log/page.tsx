@@ -37,7 +37,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <PageHeader title="Audit log" description="Every admin/teacher change, every Graph call, every playback. Newest first, 100 per page." />
+      <PageHeader eyebrow="Administration" title="Audit log" description="Every admin/teacher change, every Graph call, every playback. Newest first, 100 per page." />
       <Card className="mb-6">
         <CardContent className="pt-5">
           <form method="get" className="flex flex-wrap items-end gap-2">

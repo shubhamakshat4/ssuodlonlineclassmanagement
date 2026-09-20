@@ -18,7 +18,7 @@ export default async function SubjectsPage() {
 
   return (
     <>
-      <PageHeader title="Subjects" description="Subjects belong to a programme. Offer them to a batch from the batch page." />
+      <PageHeader eyebrow="Administration" title="Subjects" description="Subjects belong to a programme. Offer them to a batch from the batch page." />
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="grid gap-6">
           {progs.map((p) => (

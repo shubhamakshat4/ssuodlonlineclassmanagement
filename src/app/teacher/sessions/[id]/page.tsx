@@ -35,6 +35,7 @@ export default async function TeacherSessionPage({ params }: { params: Promise<{
   return (
     <>
       <PageHeader
+        eyebrow="Faculty"
         title={`${s.subject_name} — ${s.batch_code}`}
         description={`${formatIst(s.scheduled_start)} – ${formatIstTime(s.scheduled_end)} IST`}
         actions={

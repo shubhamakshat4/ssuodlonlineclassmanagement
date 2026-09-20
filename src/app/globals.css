@@ -1,32 +1,143 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   SSU ODL design tokens. Warm, calm, academic: cream canvas, ink text, saffron
+   accent for actions, deep teal for "live" states. One palette for every role.
+   --------------------------------------------------------------------------- */
 :root {
-  --background: #fafaf9;
-  --foreground: #1c1917;
-  --muted: #f5f5f4;
-  --muted-foreground: #57534e;
-  --border: #e7e5e4;
-  --primary: #7c2d12;
+  --background: #f7f5f0;
+  --surface: #ffffff;
+  --surface-muted: #fbfaf7;
+  --foreground: #1b1f2a;
+  --muted: #efece5;
+  --muted-foreground: #6b7080;
+  --border: #e6e2d8;
+  --border-strong: #d6d0c2;
+  --primary: #c2410c;
+  --primary-hover: #a3360a;
+  --primary-soft: #fff1e8;
   --primary-foreground: #ffffff;
+  --accent: #0f766e;
+  --accent-soft: #e6f4f2;
   --destructive: #b91c1c;
+  --destructive-soft: #fdecec;
   --success: #15803d;
+  --success-soft: #e8f5ec;
   --warning: #b45309;
+  --warning-soft: #fff5e0;
+  --info: #1d4ed8;
+  --info-soft: #e8eefc;
+  --ring: rgba(194, 65, 12, 0.35);
+  --shadow-sm: 0 1px 2px rgba(27, 31, 42, 0.05), 0 1px 1px rgba(27, 31, 42, 0.03);
+  --shadow-md: 0 6px 18px -8px rgba(27, 31, 42, 0.18), 0 2px 6px -2px rgba(27, 31, 42, 0.06);
+  --radius: 14px;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
   --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
   --color-destructive: var(--destructive);
+  --color-destructive-soft: var(--destructive-soft);
   --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --font-sans: "Inter", "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --radius-xl: var(--radius);
+  --shadow-card: var(--shadow-sm);
+  --shadow-float: var(--shadow-md);
+}
+
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  font-family: var(--font-sans);
+  background:
+    radial-gradient(1200px 500px at 10% -10%, rgba(194, 65, 12, 0.06), transparent 60%),
+    radial-gradient(900px 400px at 100% 0%, rgba(15, 118, 110, 0.05), transparent 60%),
+    var(--background);
+  color: var(--foreground);
+}
+
+/* Focus, selection, scrollbars */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+::selection {
+  background: var(--primary-soft);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+/* Native form controls pick up the palette */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--primary);
+}
+input[type="date"],
+input[type="time"] {
+  color-scheme: light;
+}
+
+/* Reusable motion */
+@keyframes pulse-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(15, 118, 110, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(15, 118, 110, 0);
+  }
+}
+.live-dot {
+  animation: pulse-dot 1.8s ease-out infinite;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise-in {
+  animation: rise-in 0.35s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot,
+  .rise-in {
+    animation: none;
+  }
+}
+
+details > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
 }

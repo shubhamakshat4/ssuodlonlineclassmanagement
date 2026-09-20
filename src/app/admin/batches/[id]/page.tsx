@@ -170,9 +170,9 @@ export default async function BatchDetailPage({ params }: { params: Promise<{ id
               <TBody>
                 {((students ?? []) as (Student & { profiles: { full_name: string; email: string; is_active: boolean } })[]).map((s) => (
                   <TR key={s.id}>
-                    <TD className="font-mono">{s.roll_number}</TD>
+                    <TD className="whitespace-nowrap font-mono">{s.roll_number}</TD>
                     <TD>
-                      <Link href={`/admin/students/${s.id}`} className="text-primary underline">
+                      <Link href={`/admin/students/${s.id}`} className="font-medium text-primary hover:underline">
                         {s.profiles.full_name}
                       </Link>
                     </TD>

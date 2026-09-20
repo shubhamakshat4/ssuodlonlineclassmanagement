@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ExternalLink, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatCountdown, joinWindow } from '@shared/sessions.ts';
 
@@ -32,7 +33,7 @@ export function JoinButton({ sessionId, scheduledStart, scheduledEnd, status, le
     return () => clearInterval(t);
   }, []);
 
-  if (!now) return <Button disabled>Join Now</Button>;
+  if (!now) return <Button disabled className="min-w-32">Join Now</Button>;
   const w = joinWindow(now, scheduledStart, scheduledEnd, leadMinutes, status);
 
   async function join() {
@@ -58,18 +59,19 @@ export function JoinButton({ sessionId, scheduledStart, scheduledEnd, status, le
     }
   }
 
-  if (w.state === 'cancelled') return <Button disabled variant="secondary">{status === 'completed' ? 'Ended' : 'Cancelled'}</Button>;
-  if (w.state === 'ended') return <Button disabled variant="secondary">Class over</Button>;
+  if (w.state === 'cancelled') return <Button disabled variant="secondary" className="min-w-32">{status === 'completed' ? 'Ended' : 'Cancelled'}</Button>;
+  if (w.state === 'ended') return <Button disabled variant="secondary" className="min-w-32">Class over</Button>;
   if (w.state === 'before') {
     return (
-      <Button disabled variant="secondary" title={`Opens ${leadMinutes} minutes before the class`}>
+      <Button disabled variant="outline" className="min-w-32 font-mono text-xs" title={`Opens ${leadMinutes} minutes before the class`}>
         Opens in {formatCountdown(w.opensInMs)}
       </Button>
     );
   }
   return (
     <div className="flex flex-col items-end gap-1">
-      <Button onClick={join} disabled={busy || !hasUrl} data-testid={`join-${sessionId}`} title={hasUrl ? undefined : 'Meeting link not ready yet'}>
+      <Button onClick={join} disabled={busy || !hasUrl} variant="accent" className="min-w-32" data-testid={`join-${sessionId}`} title={hasUrl ? undefined : 'Meeting link not ready yet'}>
+        {done ? <ExternalLink className="h-4 w-4" aria-hidden /> : <Video className="h-4 w-4" aria-hidden />}
         {busy ? 'Opening…' : done ? (label ?? 'Rejoin') : (label ?? 'Join Now')}
       </Button>
       {!hasUrl ? <span className="text-xs text-muted-foreground">Link not ready yet</span> : null}

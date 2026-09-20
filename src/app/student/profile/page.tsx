@@ -24,13 +24,13 @@ export default async function StudentProfilePage() {
   ];
   return (
     <>
-      <PageHeader title="Profile" description={s ? 'Read-only. Contact the ODL office to correct anything here.' : 'No classes are assigned to you yet — contact the ODL department for more details.'} />
+      <PageHeader eyebrow="Student" title="Profile" description={s ? 'Read-only. Contact the ODL office to correct anything here.' : 'No classes are assigned to you yet — contact the ODL department for more details.'} />
       <Card className="max-w-xl">
         <CardContent className="pt-5">
-          <dl className="grid grid-cols-[160px_1fr] gap-y-3 text-sm">
+          <dl className="grid grid-cols-[160px_1fr] gap-y-3.5 text-sm">
             {rows.map(([k, v]) => (
               <div key={k} className="contents">
-                <dt className="text-muted-foreground">{k}</dt>
+                <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{k}</dt>
                 <dd>{v}</dd>
               </div>
             ))}

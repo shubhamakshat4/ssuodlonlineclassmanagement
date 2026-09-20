@@ -53,6 +53,7 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
   return (
     <>
       <PageHeader
+        eyebrow="Administration"
         title="Sessions"
         description="Generated from the timetable 21 days ahead (nightly 01:00 IST). Cancel, reschedule, or add an extra class here."
         actions={

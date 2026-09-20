@@ -30,6 +30,7 @@ export default async function RecordingPlayerPage({ params }: { params: Promise<
   return (
     <>
       <PageHeader
+        eyebrow="Recording"
         title={s.subject_name}
         description={`${formatIst(s.scheduled_start)} · ${s.teacher_name ?? ''}${s.topic ? ` · ${s.topic}` : ''}`}
         actions={

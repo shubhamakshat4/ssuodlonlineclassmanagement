@@ -13,7 +13,7 @@ export default async function ProgramsPage() {
 
   return (
     <>
-      <PageHeader title="Programmes" description="Degree programmes offered through ODL. Batches and subjects hang off a programme." />
+      <PageHeader eyebrow="Administration" title="Programmes" description="Degree programmes offered through ODL. Batches and subjects hang off a programme." />
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <Card>
           <CardContent className="pt-5">
