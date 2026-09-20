@@ -20,6 +20,7 @@ export const SEED = {
   adminEmail: 'odl.admin@srisriuniversity.edu.in',
   adminPassword: 'AdminPass12345',
   liveSessionId: '30000000-0000-4000-8000-000000000005',
+  laterSessionId: '30000000-0000-4000-8000-000000000006',
 };
 
 export function adminClient() {
@@ -46,7 +47,7 @@ export async function signInWithPassword(page: Page, email: string, password: st
   await page.waitForURL((u) => !u.pathname.startsWith('/login'));
 }
 
-/** Reset the seeded live session to its pristine state (no override) and clear the student's attendance on it. */
+/** Reset the seeded live + later sessions to a pristine state relative to now, and clear the student's attendance. */
 export async function resetLiveSession() {
   const admin = adminClient();
   await admin.from('attendance').delete().eq('class_session_id', SEED.liveSessionId).eq('student_id', SEED.studentId);
@@ -62,4 +63,16 @@ export async function resetLiveSession() {
       status: 'scheduled',
     })
     .eq('id', SEED.liveSessionId);
+  await admin
+    .from('class_sessions')
+    .update({
+      join_url_override: null,
+      provider: 'teams',
+      teams_join_url: 'https://teams.microsoft.com/l/meetup-join/seed-0006',
+      sync_status: 'provisioned',
+      scheduled_start: new Date(Date.now() + 3 * 3600_000).toISOString(),
+      scheduled_end: new Date(Date.now() + 4 * 3600_000).toISOString(),
+      status: 'scheduled',
+    })
+    .eq('id', SEED.laterSessionId);
 }

@@ -21,11 +21,12 @@ Operational reference for whoever runs the portal. Everything here assumes the r
    - Hooks → Before User Created: `public.before_user_created_hook` (enabled).
    - Password: minimum length 12, letters + digits.
    - URL configuration: site URL = the Vercel domain; redirect URLs include `https://<domain>/auth/callback`.
-3. **Vault secrets for cron** (SQL editor, once):
+3. **Cron secret + Vault** (once): generate a random secret, `supabase secrets set CRON_SECRET=<secret>`, then in the SQL editor:
    ```sql
    select vault.create_secret('https://acflzvfiochinjuprrew.supabase.co', 'project_url');
-   select vault.create_secret('<service role key>', 'service_role_key');
+   select vault.create_secret('<the same secret>', 'cron_secret');
    ```
+   (The functions also accept the runtime-injected service key, so a legacy `service_role_key` Vault entry keeps working.)
    Then confirm the jobs exist: `select jobname, schedule from cron.job;` — expect `ssu-generate-sessions`,
    `ssu-provision-meetings`, `ssu-harvest-recordings`, `ssu-expire-recordings`, `ssu-rate-limits-cleanup`.
 4. **Vercel**: set every variable from `.env.local.example` (never `MS_*` — the Next app does not call Graph), plus
@@ -33,6 +34,10 @@ Operational reference for whoever runs the portal. Everything here assumes the r
 5. **First admin**: in the SQL editor create the auth user (Authentication → Users → "Add user", email + password, auto-confirm),
    then `insert into profiles (id, role, full_name, email) values ('<auth user id>', 'admin', 'Name', 'email');`.
 6. Run the Phase 6 spike from a workstation: `GRAPH_MODE=real npm run graph:spike` (see `docs/MANUAL_VERIFICATION.md`).
+
+### Notes from the first deployment
+- The direct DB host `db.<ref>.supabase.co` is IPv6-only; from IPv4-only machines use the session pooler `aws-0-ap-southeast-2.pooler.supabase.com:5432` with user `postgres.<ref>` (`SUPABASE_DB_URL`). `npm run db:migrate` applies migrations over that connection and records them for the CLI.
+- Auth settings can be applied without the dashboard: `PATCH https://api.supabase.com/v1/projects/<ref>/config/auth` with the access token (see git history of this file's first deploy for the payload).
 
 ## 2. Daily operation
 
@@ -54,7 +59,7 @@ Cron health: `select * from cron.job_run_details order by start_time desc limit 
 3. `401` token errors → client secret expired/rotated. Update `MS_CLIENT_SECRET` with `supabase secrets set`, redeploy functions.
 4. `429` → throttling; the job backs off automatically. If persistent at term start, lower the batch size (POST body `{"limit": 10}`) or spread timetable creation.
 5. Nothing runs at all → check Vault secrets and `cron.job`. Call the function by hand:
-   `curl -X POST https://<ref>.supabase.co/functions/v1/cron-provision-meetings -H "Authorization: Bearer <service role key>"`.
+   `curl -X POST https://<ref>.supabase.co/functions/v1/cron-provision-meetings -H "Authorization: Bearer <CRON_SECRET>"`.
 
 **Teacher not added as co-organiser** — `teachers.entra_upn` must be the exact tenant UPN and the teacher must be a licensed Entra user (§3.6). Check `entra_user_id` on `/admin/teachers`; "unresolved" means the UPN lookup failed.
 

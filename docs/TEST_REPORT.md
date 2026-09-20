@@ -9,7 +9,7 @@ across 17 files; `npm run lint`, `npm run typecheck`, `npm run build` clean.
 |---|---|---|---|
 | Unit (54 tests, 10 files) | Vitest | Node, no services | `npm run test:unit` |
 | Database / RLS (88 tests, 7 files) | Vitest | **Embedded Postgres 17** booted per run; every migration + `seed.sql` applied to a template DB; each file clones it and runs statements as `anon` / `authenticated` (with JWT claims) / `service_role`, exactly like PostgREST | `npm run test:db` |
-| E2E (2 journeys, 5 tests) | Playwright | Needs a running Supabase (GoTrue + PostgREST) with the seed and the service-role key | `npm run test:e2e` — **written, not executed** (B2) |
+| E2E (3 files, 8 tests) | Playwright | Executed against the **live project** (`next start` on :3100, real GoTrue/PostgREST): student join journey 3/3, teacher override journey 2/2, demo walkthrough 3/3 | `E2E_BASE_URL=http://localhost:3100 E2E_NO_SERVER=1 npm run test:e2e` |
 | Graph spike | tsx script | Real tenant when `GRAPH_MODE=real` + `MS_*` | `npm run graph:spike` — **executed against the mock only** (B1) |
 
 Everything in CI (`.github/workflows/ci.yml`) runs without external services and with Graph mocked.
@@ -52,4 +52,4 @@ Everything in CI (`.github/workflows/ci.yml`) runs without external services and
 4. **Recording harvest** against real OneDrive naming (`matchDriveItem` assumes the Teams default file name contains the subject).
 5. **Playback** through the real `@microsoft.graph.downloadUrl` (range requests / seeking in the browser).
 6. **Email delivery** of teacher invites and password resets (SMTP configured in Supabase).
-7. Running the migrations on the **cloud project** (`supabase db push`) and the Playwright journeys against it.
+7. ~~Running the migrations on the cloud project and the Playwright journeys against it~~ — done 20 Sep 2026.

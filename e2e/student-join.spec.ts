@@ -21,8 +21,7 @@ test.describe('student join journey', () => {
     const popupPromise = context.waitForEvent('page');
     await card.getByTestId(`join-${SEED.liveSessionId}`).click();
     const popup = await popupPromise;
-    await popup.waitForLoadState('domcontentloaded').catch(() => {});
-    expect(popup.url()).toContain('teams.microsoft.com');
+    await popup.waitForURL((u) => u.hostname.includes('teams.microsoft.com'), { waitUntil: 'commit', timeout: 20_000 });
     await popup.close();
 
     const admin = adminClient();
@@ -31,8 +30,9 @@ test.describe('student join journey', () => {
     expect(data?.user_agent).toBeTruthy();
 
     // a second click does not duplicate
+    const againPromise = context.waitForEvent('page');
     await card.getByTestId(`join-${SEED.liveSessionId}`).click();
-    const again = await context.waitForEvent('page');
+    const again = await againPromise;
     await again.close();
     const { count } = await admin.from('attendance').select('id', { count: 'exact', head: true }).eq('class_session_id', SEED.liveSessionId).eq('student_id', SEED.studentId);
     expect(count).toBe(1);
@@ -40,7 +40,7 @@ test.describe('student join journey', () => {
 
   test('Join is disabled outside the window', async ({ page, baseURL }) => {
     await signInStudent(page, SEED.studentEmail, baseURL);
-    const later = page.getByTestId('session-30000000-0000-4000-8000-000000000006');
+    const later = page.getByTestId(`session-${SEED.laterSessionId}`);
     await expect(later).toBeVisible();
     await expect(later.getByRole('button')).toBeDisabled();
     await expect(later.getByRole('button')).toContainText(/Opens in/);

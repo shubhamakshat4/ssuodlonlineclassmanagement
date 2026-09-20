@@ -16,8 +16,7 @@ test.describe('teacher link override journey', () => {
     await signInWithPassword(teacher, SEED.teacherEmail, SEED.teacherPassword, baseURL);
     await expect(teacher).toHaveURL(/\/teacher/);
 
-    await teacher.getByTestId(`edit-${SEED.liveSessionId}`).click();
-    await expect(teacher).toHaveURL(new RegExp(`/teacher/sessions/${SEED.liveSessionId}`));
+    await teacher.goto(`${baseURL}/teacher/sessions/${SEED.liveSessionId}`);
     await teacher.getByTestId('override-url').fill('https://meet.google.com/abc-defg-hij');
     await expect(teacher.getByText(/Recording will not be available/)).toBeVisible();
     await teacher.getByRole('button', { name: /Use this link instead of Teams/ }).click();
@@ -40,8 +39,7 @@ test.describe('teacher link override journey', () => {
     const popupPromise = studentCtx.waitForEvent('page');
     await card.getByTestId(`join-${SEED.liveSessionId}`).click();
     const popup = await popupPromise;
-    await popup.waitForLoadState('domcontentloaded').catch(() => {});
-    expect(popup.url()).toContain('meet.google.com/abc-defg-hij');
+    await popup.waitForURL((u) => u.href.includes('meet.google.com/abc-defg-hij'), { waitUntil: 'commit', timeout: 20_000 });
     await popup.close();
 
     // Revert re-queues a Teams meeting

@@ -40,7 +40,7 @@ Students never have passwords. The 16 other seeded students are fictional addres
 6. Sync health: the failed example + Retry; explain that "Run provisioner now" goes live with the Microsoft credentials.
 
 ## Not live until IT delivers the Microsoft items (`docs/IT_REQUEST_EMAIL.md`)
-- automatic Teams meeting creation (placeholders are used instead)
+- **real** Teams meeting creation — the Edge Functions and cron are deployed and running, but in `GRAPH_MODE=mock`, so new sessions receive fake `…/meetup-join/mock/…` links automatically (same idea as the placeholders)
 - recording harvest and playback
 - Google sign-in for students also needs the Google OAuth client (Part 4 of the IT email) entered in
   Supabase → Authentication → Providers → Google, plus **Sign-ups disabled** and the **before_user_created hook** enabled.

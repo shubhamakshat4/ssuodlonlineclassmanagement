@@ -25,14 +25,22 @@ export function anonClientForRequest(req: Request) {
 }
 
 /**
- * Cron functions are invoked by pg_net with `Authorization: Bearer <service role key>`.
- * Anything else is rejected. A constant-time compare keeps timing leaks out of the picture.
+ * Cron functions are invoked server-to-server with `Authorization: Bearer <secret>`, where the secret
+ * is one of: CRON_SECRET (set with `supabase secrets set`, stored in Vault for pg_net), the
+ * service-role key the runtime injects, or any of the project's secret API keys. Anything else is
+ * rejected. Constant-time compares keep timing leaks out of the picture.
  */
 export function requireServiceRole(req: Request): Response | null {
-  const expected = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const accepted = [
+    Deno.env.get('CRON_SECRET'),
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
+    ...(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '').split(','),
+  ]
+    .map((v) => v?.trim() ?? '')
+    .filter((v) => v.length >= 20);
   const header = req.headers.get('Authorization') ?? '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : '';
-  if (!expected || !timingSafeEqual(token, expected)) {
+  const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+  if (!token || !accepted.some((a) => timingSafeEqual(token, a))) {
     return json({ error: 'Unauthorized' }, 401);
   }
   return null;

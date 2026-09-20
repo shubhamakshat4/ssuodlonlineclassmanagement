@@ -179,3 +179,12 @@ One entry per phase. Newest at the bottom.
 - Fixed while verifying: the post-revert confirmation vanished with the form (now a persistent state-derived
   note on the teacher session page); scripts now load `.env.local`.
 - Wrote `docs/IT_REQUEST_EMAIL.md` (step-by-step request for Microsoft 365 + Google) and `docs/DEMO.md`.
+
+## Post-build 2 — Edge Functions, cron, auth config live (20 Sep 2026)
+- CLI linked; migration state matches; 5 Edge Functions deployed; `CRON_SECRET` + Vault (`project_url`, `cron_secret`);
+  new migration `…001100_cron_secret.sql` (`invoke_edge_function` prefers `cron_secret`); runtime bearer check
+  accepts CRON_SECRET / injected service key / project secret keys (the runtime injects new-style `sb_secret_` keys,
+  not the legacy JWT). Verified: each function 200 with the secret, 401 without; pg_cron → pg_net → function 200.
+- Auth config via Management API: sign-ups off, hook on, password ≥12 with letters+digits, redirect allow-list.
+- Live E2E: student-join 3/3 (magic-link sign-in, Join → attendance row, duplicate click, window closed,
+  other-batch isolation), teacher-override 2/2, demo walkthrough 3/3. Fixture fixes only (IST-midnight edge, popup waits).
