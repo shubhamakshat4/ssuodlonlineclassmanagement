@@ -3,7 +3,7 @@ import { Alert } from '@/components/ui/primitives';
 import { appConfig } from '@/lib/env';
 
 const MESSAGES: Record<string, string> = {
-  'no-profile': 'Your account exists but is not registered in the ODL portal, or has been deactivated. Contact the ODL office.',
+  'no-profile': 'Your account has been deactivated in the ODL portal. Contact the ODL office.',
   'google-not-student': 'Google sign-in is only for students. Teachers and admins sign in with email and password.',
   provider: `Google could not sign you in. Make sure you chose your @${appConfig.allowedStudentDomain} account.`,
   exchange: 'The sign-in link is invalid or has expired. Please try again.',

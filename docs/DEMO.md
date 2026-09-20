@@ -18,7 +18,7 @@ npm run dev       # http://localhost:3000   (or: npm run build && npx next start
 | Teacher | `anand.mishra@srisriuniversity.edu.in` | `TeacherPass12345` | Financial Management (BBA-2025) + Strategic Management (MBA-2025) |
 | Teacher | `kavita.sen@srisriuniversity.edu.in` | `TeacherPass12345` | Marketing Management + Operations Research |
 | Teacher | `rohit.verma@srisriuniversity.edu.in` | `TeacherPass12345` | forced password change on first login (demo of the invite flow) |
-| Student | `akshat.s@srisriuniversity.edu.in` | Google sign-in only | BBA-ODL-2025 dashboard — **needs the Google provider configured** (see below) |
+| Student | any `@srisriuniversity.edu.in` Google account (yours is pre-mapped to BBA-ODL-2025) | Google sign-in only | dashboard, or "No class mapped — contact admin" until mapped — **needs the Google provider configured** (`docs/GOOGLE_SSO_SETUP.md`) |
 
 Students never have passwords. The 16 other seeded students are fictional addresses and cannot sign in.
 
@@ -42,8 +42,7 @@ Students never have passwords. The 16 other seeded students are fictional addres
 ## Not live until IT delivers the Microsoft items (`docs/IT_REQUEST_EMAIL.md`)
 - **real** Teams meeting creation — the Edge Functions and cron are deployed and running, but in `GRAPH_MODE=mock`, so new sessions receive fake `…/meetup-join/mock/…` links automatically (same idea as the placeholders)
 - recording harvest and playback
-- Google sign-in for students also needs the Google OAuth client (Part 4 of the IT email) entered in
-  Supabase → Authentication → Providers → Google, plus **Sign-ups disabled** and the **before_user_created hook** enabled.
+- Google sign-in for students needs the Google OAuth client — 10 minutes, step by step in `docs/GOOGLE_SSO_SETUP.md`.
 
 ## Going live later
 ```bash

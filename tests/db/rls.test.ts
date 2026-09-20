@@ -454,23 +454,44 @@ describe('service role', () => {
   });
 });
 
-describe('auth guards', () => {
-  it('rejects creating a brand-new user through Google (students are pre-provisioned)', async () => {
+describe('auth guards (any @domain Google account may sign in; batch mapping decides what they see)', () => {
+  it('a brand-new Google user at the university domain is accepted and gets a student profile with no batch', async () => {
+    const [u] = await db.sudo<{ id: string }>(
+      `insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+       values (gen_random_uuid(), 'New.Student@srisriuniversity.edu.in', '{"provider":"google","providers":["google"]}', '{"full_name":"New Student"}', now(), now()) returning id`,
+    );
+    const [p] = await db.sudo<{ role: string; full_name: string; email: string }>('select role, full_name, email from profiles where id = $1', [u.id]);
+    expect(p).toEqual({ role: 'student', full_name: 'New Student', email: 'new.student@srisriuniversity.edu.in' });
+    expect(await db.sudo('select id from students where id = $1', [u.id])).toHaveLength(0);
+    // their Google identity attaches fine
+    await db.sudo(`insert into auth.identities (provider_id, user_id, identity_data, provider) values ('g-new', $1, '{"sub":"g-new","email":"new.student@srisriuniversity.edu.in"}', 'google')`, [u.id]);
+    // unmapped: signed in but sees nothing, and is listed for the admin
+    expect(await db.rows(asUser(u.id), 'select id from class_sessions')).toHaveLength(0);
+    expect(await db.rows(asUser(u.id), 'select id from recordings')).toHaveLength(0);
+    expect((await db.rows<{ id: string }>(admin, 'select id from v_unmapped_students')).map((r) => r.id)).toContain(u.id);
+    expect((await db.rows<{ id: string }>(asUser(u.id), 'select id from v_unmapped_students')).map((r) => r.id)).toEqual([u.id]);
+    // admin maps them to BBA-2025 -> timetable appears
+    await db.exec(admin, `insert into students (id, roll_number, batch_id) values ($1, 'ODL25BBA777', $2)`, [u.id, F.BATCH_BBA_2025]);
+    expect((await db.rows(asUser(u.id), 'select id from class_sessions')).length).toBeGreaterThan(0);
+    expect(await db.rows(admin, 'select id from v_unmapped_students where id = $1', [u.id])).toHaveLength(0);
+  });
+
+  it('rejects a Google user outside the university domain', async () => {
     const msg = await expectDenied(
       db.sudo(
         `insert into auth.users (id, email, raw_app_meta_data, created_at, updated_at)
-         values (gen_random_uuid(), 'stranger@srisriuniversity.edu.in', '{"provider":"google","providers":["google"]}', now(), now())`,
+         values (gen_random_uuid(), 'someone@gmail.com', '{"provider":"google","providers":["google"]}', now(), now())`,
       ),
     );
-    expect(msg).toMatch(/not registered as an ODL student/i);
+    expect(msg).toMatch(/srisriuniversity.edu.in/);
   });
 
-  it('allows admin-created email users (inserted by the auth server)', async () => {
-    const r = await db.sudo(
+  it('admin-created email users get no automatic profile (the app provisions them)', async () => {
+    const [u] = await db.sudo<{ id: string }>(
       `insert into auth.users (id, email, raw_app_meta_data, created_at, updated_at)
        values (gen_random_uuid(), 'new.teacher@srisriuniversity.edu.in', '{"provider":"email","providers":["email"]}', now(), now()) returning id`,
     );
-    expect(r).toHaveLength(1);
+    expect(await db.sudo('select id from profiles where id = $1', [u.id])).toHaveLength(0);
   });
 
   it('blocks the Google provider for teacher and admin accounts', async () => {
@@ -492,7 +513,7 @@ describe('auth guards', () => {
         [F.STUDENT_AARAV],
       ),
     );
-    expect(msg).toMatch(/srisriuniversity\.edu\.in/);
+    expect(msg).toMatch(/srisriuniversity.edu.in/);
   });
 
   it('allows a Google identity to link to a pre-provisioned student', async () => {
@@ -504,16 +525,16 @@ describe('auth guards', () => {
     expect(r).toHaveLength(1);
   });
 
-  it('before_user_created_hook rejects Google sign-ups and passes email users', async () => {
-    const [g] = await db.sudo<{ r: { error?: { http_code: number; message: string } } }>(
+  it('before_user_created_hook rejects only wrong-domain Google sign-ups', async () => {
+    const [ok] = await db.sudo<{ r: Record<string, unknown> }>(
       `select before_user_created_hook('{"user":{"email":"x@srisriuniversity.edu.in","app_metadata":{"provider":"google","providers":["google"]}}}') as r`,
     );
-    expect(g.r.error?.http_code).toBe(403);
-    expect(g.r.error?.message).toMatch(/not registered/i);
-    const [wrong] = await db.sudo<{ r: { error?: { message: string } } }>(
+    expect(ok.r).toEqual({});
+    const [wrong] = await db.sudo<{ r: { error?: { http_code: number; message: string } } }>(
       `select before_user_created_hook('{"user":{"email":"x@gmail.com","app_metadata":{"provider":"google"}}}') as r`,
     );
-    expect(wrong.r.error?.message).toMatch(/srisriuniversity\.edu\.in/);
+    expect(wrong.r.error?.http_code).toBe(403);
+    expect(wrong.r.error?.message).toMatch(/srisriuniversity.edu.in/);
     const [e] = await db.sudo<{ r: Record<string, unknown> }>(
       `select before_user_created_hook('{"user":{"email":"t@srisriuniversity.edu.in","app_metadata":{"provider":"email"}}}') as r`,
     );

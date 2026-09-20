@@ -61,6 +61,22 @@ export const updateStudent = formAction(
   },
 );
 
+const mapSchema = z.object({ id: z.string().uuid(), roll_number: z.string().min(2).transform((s) => s.toUpperCase()), batch_id: z.string().uuid(), status: STATUS.default('active') });
+
+/** Map a self-registered (Google) student profile to a batch + roll number. */
+export const mapStudent = formAction(
+  {
+    roles: ['admin'],
+    schema: mapSchema,
+    revalidate: ['/admin/students', '/admin', '/student'],
+  },
+  async (input, { supabase }) => {
+    must(await supabase.from('students').insert({ id: input.id, roll_number: input.roll_number, batch_id: input.batch_id, status: input.status }).select('id').single());
+    await audit(supabase, 'student.mapped', 'students', input.id, { roll_number: input.roll_number, batch_id: input.batch_id });
+    return { message: 'Student mapped to the batch. Their timetable is visible on next refresh.' };
+  },
+);
+
 export const deleteStudent = formAction({ roles: ['admin'], schema: z.object({ id: z.string().uuid() }), revalidate: ['/admin/students'] }, async (input, { supabase }) => {
   await audit(supabase, 'student.deleted', 'students', input.id, {});
   await deleteUser(input.id);

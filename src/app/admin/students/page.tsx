@@ -5,7 +5,7 @@ import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, Field
 import { createClient } from '@/lib/supabase/server';
 import type { Batch, Student } from '@/lib/db/types';
 import { appConfig } from '@/lib/env';
-import { createStudent, importStudents } from './actions';
+import { createStudent, importStudents, mapStudent } from './actions';
 
 export const metadata = { title: 'Students — Admin' };
 
@@ -17,16 +17,53 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
   let query = supabase.from('students').select('*, profiles!inner(full_name, email, phone, is_active)').order('roll_number');
   if (batch) query = query.eq('batch_id', batch);
   if (q) query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`, { referencedTable: 'profiles' });
-  const [{ data: students }, { data: batches }] = await Promise.all([query, supabase.from('batches').select('*').order('code')]);
+  const [{ data: students }, { data: batches }, { data: unmappedData }] = await Promise.all([
+    query,
+    supabase.from('batches').select('*').order('code'),
+    supabase.from('v_unmapped_students').select('*'),
+  ]);
+  const unmapped = (unmappedData ?? []) as { id: string; full_name: string; email: string; created_at: string }[];
   const batchList = (batches ?? []) as Batch[];
   const batchById = new Map(batchList.map((b) => [b.id, b]));
   const rows = (students ?? []) as Row[];
 
   return (
     <>
-      <PageHeader title="Students" description="Pre-provisioned records. A student can only sign in with Google once their record exists here." />
+      <PageHeader title="Students" description={`Any @${appConfig.allowedStudentDomain} Google account can sign in; a student only sees classes once mapped to a batch here.`} />
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="grid gap-6">
+          {unmapped.length ? (
+            <Card className="border-amber-300">
+              <CardHeader>
+                <CardTitle>Signed in but not mapped ({unmapped.length})</CardTitle>
+                <CardDescription>These students signed in with Google but have no batch yet. They currently see “No class mapped — contact admin”.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-3">
+                {unmapped.map((u) => (
+                  <div key={u.id} className="flex flex-wrap items-center gap-2 rounded-md border border-border p-3" data-testid={`unmapped-${u.id}`}>
+                    <div className="min-w-56">
+                      <div className="font-medium">{u.full_name}</div>
+                      <div className="text-xs text-muted-foreground">{u.email}</div>
+                    </div>
+                    <ActionForm action={mapStudent} inline submitLabel="Map to batch" className="flex-wrap">
+                      <input type="hidden" name="id" value={u.id} />
+                      <Input name="roll_number" placeholder="Roll number" required className="w-40 font-mono uppercase" aria-label="Roll number" />
+                      <Select name="batch_id" required defaultValue="" className="w-48" aria-label="Batch">
+                        <option value="" disabled>
+                          Batch…
+                        </option>
+                        {batchList.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.code}
+                          </option>
+                        ))}
+                      </Select>
+                    </ActionForm>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
           <Card>
             <CardContent className="pt-5">
               <form className="mb-4 flex flex-wrap items-end gap-2" method="get">

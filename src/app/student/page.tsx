@@ -21,6 +21,21 @@ export default async function StudentHome() {
   );
   const enrolment = student.data as { status: string; batches: { code: string; name: string } | null } | null;
 
+  if (!enrolment) {
+    return (
+      <>
+        <PageHeader title={`Hello, ${user.fullName.split(' ')[0]}`} description={user.email} />
+        <Alert variant="warning" data-testid="no-class-mapped">
+          <p className="font-medium">No class mapped — contact admin.</p>
+          <p className="mt-1">
+            Your university account is signed in, but the ODL office has not yet linked it to a batch. Once they add your roll number and batch, your
+            timetable and recordings will appear here automatically. Quote this email when you contact them: <strong>{user.email}</strong>.
+          </p>
+        </Alert>
+      </>
+    );
+  }
+
   return (
     <>
       <PageHeader title={`Hello, ${user.fullName.split(' ')[0]}`} description={enrolment?.batches ? `${enrolment.batches.name} (${enrolment.batches.code})` : undefined} />

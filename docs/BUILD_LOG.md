@@ -188,3 +188,10 @@ One entry per phase. Newest at the bottom.
 - Auth config via Management API: sign-ups off, hook on, password ≥12 with letters+digits, redirect allow-list.
 - Live E2E: student-join 3/3 (magic-link sign-in, Join → attendance row, duplicate click, window closed,
   other-batch isolation), teacher-override 2/2, demo walkthrough 3/3. Fixture fixes only (IST-midnight edge, popup waits).
+
+## Change — open student sign-in with admin mapping (21 Sep 2026)
+- Migration `…001200_open_student_signin.sql`: hook + `auth.users` guard now reject only wrong-domain Google
+  users; new AFTER INSERT trigger creates the student profile; identity guard keeps Google off teacher/admin
+  accounts; `v_unmapped_students` view. App: "No class mapped — contact admin" on `/student`, admin
+  "Signed in but not mapped" box with *Map to batch*, copy updates. Tests updated (143 green). Applied to the
+  cloud project and verified through the live app (unmapped → mapped). `docs/GOOGLE_SSO_SETUP.md` written.
