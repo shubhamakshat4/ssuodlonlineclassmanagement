@@ -88,3 +88,20 @@ One entry per phase. Newest at the bottom.
   the mock: all steps green, verdict "MOCK ONLY".
 - Skipped: the real-tenant run (no credentials). Proceeding to Phase 7 per the operating rules with both
   the primary and fallback recording paths implemented.
+
+## Phase 7 — cron-provision-meetings, retry/backoff, sync health — done
+- Built: migration `…000800_provisioning.sql` (`claim_pending_sessions` with `FOR UPDATE SKIP LOCKED`,
+  `recover_stuck_provisioning`, `v_sessions_needing_event_deletion`, cron every 10 min); job
+  `_shared/jobs/provision-meetings.ts` (housekeeping → deletions for cancelled/custom → claim → per
+  session create / patch (reschedule) / recreate (revert after override); attempts + `failed` after 5;
+  teacher object-id caching; audit rows for every outcome); `graphAuditHook` logs every Graph call to
+  `audit_log`; Edge Function `cron-provision-meetings` (honours `GRAPH_RECORDING_MODE`); admin
+  `/admin/sync-health` (counts, "starts in 30 min with no meeting" warning, failed list with verbatim
+  Graph error + Retry, Retry all, last runs, recent Graph calls, **Run provisioner now** in-process on
+  the Next server with explicit `GRAPH_MODE` required).
+- Tested: `tests/unit/provision.test.ts` — full job against the mock Graph + an in-memory fake of the
+  supabase-js builder: happy path (IST times, options, ids stored, teacher id cached), failure counting to
+  `failed`, patch on reschedule, delete for cancelled/custom, recreate after revert, recordAutomatically
+  degrade + manual mode. `tests/db/provisioning.test.ts` — claim semantics, SKIP LOCKED with two
+  connections, stuck recovery, privileges, deletion view.
+- Skipped: nothing (cloud deployment pending B2).

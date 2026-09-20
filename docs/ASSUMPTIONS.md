@@ -60,3 +60,10 @@ Every decision the spec did not make. Format: what — why — cost to change la
 - Teacher `entra_user_id` is resolved from the UPN via Graph on first provisioning and cached on `teachers`. — Spec column exists for this. — Trivial.
 - Step 2 (`onlineMeetings?$filter=JoinWebUrl`) is retried up to 4× with a short delay because the meeting object can lag the event by a few seconds. — Observed Graph behaviour. — Trivial.
 - Windows time zone name mapping is a small table (`Asia/Kolkata` → `India Standard Time`). — Graph events want Windows zone names. — Trivial.
+
+## Phase 7 — provisioning
+- Batch size 20 per run (every 10 min → up to 120 sessions/hour, well under Graph limits at 4 req/s). — Throttle safety at term start (§15.4). — Trivial (`limit` in the request body).
+- Rows stuck in `provisioning` for more than 15 minutes are re-queued (`recover_stuck_provisioning`). — Crash safety. — Trivial.
+- Event deletion failures do not flip the session to `failed` (it is already cancelled/custom); they increment `sync_attempts` and keep the event id so the next run retries. — The class itself is unaffected. — Low.
+- A session that was provisioned but ends up without `recordAutomatically` stays `provisioned` with an explanatory `sync_error`. — Students can still join; only recording is affected. — Low.
+- "Run provisioner now" executes the job inside the Next.js server (server-side, service role) instead of calling the Edge Function over HTTP. — Works locally without deployed functions and keeps one code path. — Low; swap for `invoke_edge_function` if preferred.
