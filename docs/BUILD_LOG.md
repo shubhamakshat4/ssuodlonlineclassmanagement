@@ -146,3 +146,13 @@ One entry per phase. Newest at the bottom.
   errors), `tests/db/recordings.test.ts` (awaiting view semantics, visibility after harvest, expiry flip
   + privileges, cross-batch isolation). All 16 test files green; lint/typecheck/build green.
 - Skipped: real OneDrive/Graph behaviour (B1); Edge Functions not deployed (B2).
+
+## Phase 11 — attendance reports + CSV, audit log viewer — done
+- Built: `/admin/attendance` (batch, optional subject, date range → student × class matrix with per-student
+  and per-class totals; hover shows join time + IP; explicit "portal join ≠ presence" copy),
+  `/admin/attendance/export` (long-format CSV with BOM for Excel, audited), `src/lib/queries/attendance.ts`
+  shared by both; `/admin/audit-log` (filters by action prefix / entity / entity id / actor, expandable
+  JSON payloads, keyset "older entries" paging, actor names resolved).
+- Tested: CSV serialisation unit-tested in Phase 3; report queries run under admin RLS (covered by the
+  RLS suite); lint/typecheck/build green.
+- Skipped: nothing.

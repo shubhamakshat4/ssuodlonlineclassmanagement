@@ -85,3 +85,8 @@ Every decision the spec did not make. Format: what — why — cost to change la
 - The browser reaches `recording-play` through the Next.js proxy `/api/recordings/{id}/play` because a navigation cannot carry the JWT header; the proxy relays the 302 and caches nothing. — Keeps §8 intact (no re-hosting, no stored URLs). — Low.
 - Sessions still without a recording 48 h after ending simply drop out of the harvest view (no `failed` row is written). — Keeps the table honest; admins can see gaps in reports. — Low.
 - Retention days come from `app_settings.recording_retention_days` (30). — Single config. — Trivial.
+
+## Phase 11 — reports
+- The report screen is a matrix (students × classes); the CSV is long format (one row per student per class) because it pivots cleanly in Excel. — Two views of the same query. — Trivial.
+- Cancelled sessions are excluded from attendance reports. — No one could join them. — Trivial.
+- CSV exports are written to the audit log (`attendance.exported`) with the filter used. — Personal data leaving the system should be traceable. — Trivial.
