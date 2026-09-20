@@ -41,3 +41,8 @@ Every decision the spec did not make. Format: what — why — cost to change la
 - Deleting a teacher is refused while they have sessions; deactivating is the normal path. Deleting a student cascades (auth user → profile → student → attendance). — Referential safety. — Low.
 - Subject codes/batch codes are upper-cased and restricted to `[A-Z0-9_-]`. — Clean joins with CSV `batch_code`. — Trivial.
 - `NEXT_PUBLIC_SITE_URL` env added (invite/callback links). — Needed to build redirect URLs server-side. — Trivial.
+
+## Phase 4 — timetable
+- Clash = same weekday, overlapping `[start,end)` times, overlapping effective date ranges, and same teacher **or** same batch (via `batch_subjects.batch_id`). Back-to-back slots are fine. — Spec says "same teacher or same batch double-booked". — Low.
+- Editing/deactivating a slot or adding a holiday does **not** retroactively cancel sessions already generated (admins do that under Sessions). — Avoids surprising deletions of provisioned meetings; the 21-day horizon keeps exposure small. — Medium; could add a "cancel future sessions of this slot" action.
+- Deleting a slot sets `timetable_slot_id = null` on its sessions (FK `on delete set null`), which turns them into ad-hoc sessions. — Preserves history/attendance. — Low.

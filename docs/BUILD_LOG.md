@@ -51,3 +51,14 @@ One entry per phase. Newest at the bottom.
 - Tested: unit tests for CSV parsing and timezone maths (IST + a DST zone to prove it is not offset
   arithmetic). Lint/typecheck/build green. Admin RLS paths covered by the Phase 1 suite.
 - Skipped: nothing. Live user creation needs the service-role key (B2).
+
+## Phase 4 — timetable builder + holidays — done
+- Built: `/admin/timetable` (per-batch week grid Mon–Sun, add slot, inline edit/deactivate/delete, effective
+  date ranges), `/admin/holidays` (global or per-batch, unique per date). Clash detection twice: a pure
+  `findClashes()` for a descriptive pre-check in the action and a `BEFORE INSERT OR UPDATE` trigger
+  (`20260920000600_timetable_clash_check.sql`) that is the guarantee — same teacher or same batch, same
+  weekday, overlapping times and overlapping effective ranges.
+- Tested: `tests/unit/clash.test.ts` (pure logic), `tests/db/timetable.test.ts` (trigger: teacher clash,
+  batch clash, back-to-back OK, disjoint date ranges OK, inactive ignored, re-check on update, holiday
+  uniqueness). All suites green; lint/typecheck/build green.
+- Skipped: nothing.
