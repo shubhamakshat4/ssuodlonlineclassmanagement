@@ -156,3 +156,14 @@ One entry per phase. Newest at the bottom.
 - Tested: CSV serialisation unit-tested in Phase 3; report queries run under admin RLS (covered by the
   RLS suite); lint/typecheck/build green.
 - Skipped: nothing.
+
+## Phase 12 — hardening — done
+- Built: DB-backed fixed-window rate limiter (`rate_limit_hit`, service-only, daily cleanup) with an
+  in-process fallback (`src/lib/rate-limit.ts`) applied to join (30/min/user), password login
+  (20/15 min/IP, 8/15 min/email) and playback (60/min/user); security headers + CSP in `next.config.ts`;
+  error monitoring (`src/lib/monitoring.ts` structured logs + optional webhook, `instrumentation.ts`
+  `onRequestError`, `app/error.tsx`); privilege tightening on job-only views/tables; extra RLS suite
+  (`tests/db/hardening.test.ts`: limiter, job-only functions/views, no self-escalation, deactivation,
+  audit actor forgery); `docs/RUNBOOK.md`, `docs/TEST_REPORT.md`, `docs/MANUAL_VERIFICATION.md`, README.
+- Tested: 142 tests / 17 files green; lint, typecheck, build green.
+- Skipped: nothing in scope. Cloud deployment + real-tenant checks remain for a human (B1, B2).

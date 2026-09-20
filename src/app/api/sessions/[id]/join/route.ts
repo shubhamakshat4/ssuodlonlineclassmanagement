@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUser } from '@/lib/auth/session';
 import type { ClassSessionView } from '@/lib/db/types';
+import { LIMITS, rateLimit } from '@/lib/rate-limit';
 
 /**
  * POST /api/sessions/{id}/join  (SPEC §10)
@@ -15,6 +16,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!(await rateLimit(`join:${user.id}`, LIMITS.join.limit, LIMITS.join.windowSeconds))) {
+    return NextResponse.json({ error: 'Too many attempts. Please wait a minute and try again.' }, { status: 429, headers: { 'Retry-After': '60' } });
+  }
 
   const supabase = await createClient();
   const { data: session } = await supabase.from('v_class_sessions').select('*').eq('id', id).maybeSingle();

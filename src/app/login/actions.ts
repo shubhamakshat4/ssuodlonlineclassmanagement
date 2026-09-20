@@ -1,6 +1,8 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { clientIp, LIMITS, rateLimit } from '@/lib/rate-limit';
 import { createClient } from '@/lib/supabase/server';
 import { ROLE_HOME, safeNextPath, type Role } from '@/lib/auth/routing';
 
@@ -17,6 +19,13 @@ export async function signInWithPassword(_prev: LoginState, formData: FormData):
   const next = safeNextPath(String(formData.get('next') ?? ''), '');
 
   if (!email || !password) return { error: 'Enter your email and password.' };
+
+  const ip = clientIp(await headers());
+  const [ipOk, emailOk] = await Promise.all([
+    rateLimit(`login:ip:${ip}`, LIMITS.loginIp.limit, LIMITS.loginIp.windowSeconds),
+    rateLimit(`login:email:${email}`, LIMITS.loginEmail.limit, LIMITS.loginEmail.windowSeconds),
+  ]);
+  if (!ipOk || !emailOk) return { error: 'Too many sign-in attempts. Please wait 15 minutes and try again.' };
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });

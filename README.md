@@ -1,0 +1,21 @@
+# SSU ODL — Online Class Management Portal
+
+Sri Sri University's ODL programme: students sign in with Google and join scheduled classes; teachers
+manage their links; admins run programmes, batches, timetables and reports; Microsoft Teams meetings
+are created automatically and recordings are streamed from the university's OneDrive for 30 days.
+
+- Spec: [`SPEC.md`](SPEC.md) · Conventions: [`CLAUDE.md`](CLAUDE.md)
+- Progress: [`docs/BUILD_LOG.md`](docs/BUILD_LOG.md) · Decisions: [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md) · Open items: [`docs/BLOCKERS.md`](docs/BLOCKERS.md)
+- Operate: [`docs/RUNBOOK.md`](docs/RUNBOOK.md) · Verify by hand: [`docs/MANUAL_VERIFICATION.md`](docs/MANUAL_VERIFICATION.md) · Tests: [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md)
+- Microsoft 365 prerequisites: [`docs/M365_SETUP.md`](docs/M365_SETUP.md)
+
+## Quick start
+```bash
+cp .env.local.example .env.local   # fill in values
+npm ci
+npm run dev                        # http://localhost:3000
+npm test                           # unit + RLS suite (embedded Postgres, no Docker needed)
+npm run lint && npm run typecheck && npm run build
+```
+Local Supabase (needs Docker): `supabase start && supabase db reset` seeds fake data —
+admin `odl.admin@srisriuniversity.edu.in` / `AdminPass12345`, teachers `TeacherPass12345`.

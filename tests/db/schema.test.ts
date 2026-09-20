@@ -27,6 +27,7 @@ describe('schema + seed', () => {
       'holidays',
       'profiles',
       'programs',
+      'rate_limits',
       'recordings',
       'students',
       'subject_teachers',

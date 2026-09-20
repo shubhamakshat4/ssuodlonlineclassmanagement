@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { publicEnv } from '@/lib/env';
+import { LIMITS, rateLimit } from '@/lib/rate-limit';
 
 /**
  * GET /api/recordings/{sessionId}/play
@@ -17,6 +18,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     data: { session },
   } = await supabase.auth.getSession();
   if (!session?.access_token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!(await rateLimit(`play:${session.user.id}`, LIMITS.play.limit, LIMITS.play.windowSeconds))) {
+    return NextResponse.json({ error: 'Too many playback requests. Please wait a minute.' }, { status: 429, headers: { 'Retry-After': '60' } });
+  }
 
   const fnUrl = `${publicEnv.supabaseUrl}/functions/v1/recording-play?session_id=${encodeURIComponent(sessionId)}`;
   const res = await fetch(fnUrl, {

@@ -90,3 +90,8 @@ Every decision the spec did not make. Format: what — why — cost to change la
 - The report screen is a matrix (students × classes); the CSV is long format (one row per student per class) because it pivots cleanly in Excel. — Two views of the same query. — Trivial.
 - Cancelled sessions are excluded from attendance reports. — No one could join them. — Trivial.
 - CSV exports are written to the audit log (`attendance.exported`) with the filter used. — Personal data leaving the system should be traceable. — Trivial.
+
+## Phase 12 — hardening
+- Rate limiting is a fixed window stored in Postgres (shared across serverless instances) with an in-memory fallback when the service key is absent or the call fails; it fails open after logging. — No Redis in the stack; a limiter outage must not block classes. — Low.
+- Error monitoring is vendor-free (structured logs + optional webhook) rather than a Sentry SDK. — Spec does not name a vendor; keeps dependencies small. — Trivial to add Sentry inside `reportError()`.
+- CSP allows `'unsafe-inline'` scripts/styles (Next.js inline runtime + Tailwind) and media from Microsoft/SharePoint hosts for recording playback. — Practical baseline; tighten with nonces later. — Low.
