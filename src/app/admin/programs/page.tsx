@@ -6,6 +6,8 @@ import type { Program } from '@/lib/db/types';
 import { createProgram, updateProgram } from './actions';
 
 export const metadata = { title: 'Programmes — Admin' };
+// Vercel: allow long imports / provisioner runs (default function timeout is 10 s)
+export const maxDuration = 60;
 
 export default async function ProgramsPage() {
   const supabase = await createClient();

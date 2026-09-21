@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseCsvObjects } from '@/lib/domain/csv';
-import { SPECS, specFor, templateCsv, timetableSpec, validateRows } from '@/lib/admin/csv-specs';
+import { SPECS, specFor, templateCsv, timetableSpec, validateRows, type CsvSpec } from '@/lib/admin/csv-specs';
 
 describe('CSV templates', () => {
   it('every template parses back with exactly the spec columns and validates cleanly', () => {
@@ -9,7 +9,7 @@ describe('CSV templates', () => {
       const { headers, rows } = parseCsvObjects(csv);
       expect(headers, spec.key).toEqual(spec.columns.map((c) => c.name));
       expect(rows.length, spec.key).toBe(spec.sampleRows.length);
-      const v = validateRows(spec, headers, rows);
+      const v = validateRows(spec as CsvSpec<unknown>, headers, rows);
       expect(v.issues, `${spec.key}: ${JSON.stringify(v.issues)}`).toHaveLength(0);
       expect(v.ok).toHaveLength(rows.length);
     }

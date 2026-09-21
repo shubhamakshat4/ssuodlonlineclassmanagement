@@ -3,6 +3,8 @@ import { Alert, PageHeader } from '@/components/ui/primitives';
 import { SPECS } from '@/lib/admin/csv-specs';
 
 export const metadata = { title: 'CSV import — Admin' };
+// Vercel: allow long imports / provisioner runs (default function timeout is 10 s)
+export const maxDuration = 60;
 
 export default function ImportPage() {
   return (

@@ -8,6 +8,8 @@ import { DAY_SHORT, hhmm, istDate } from '@/lib/domain/time';
 import { createSlot, deleteSlot, updateSlot } from './actions';
 
 export const metadata = { title: 'Timetable — Admin' };
+// Vercel: allow long imports / provisioner runs (default function timeout is 10 s)
+export const maxDuration = 60;
 
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Mon..Sun
 

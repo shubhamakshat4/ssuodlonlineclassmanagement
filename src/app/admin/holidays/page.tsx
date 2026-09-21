@@ -7,6 +7,8 @@ import { istDate } from '@/lib/domain/time';
 import { createHoliday, deleteHoliday } from './actions';
 
 export const metadata = { title: 'Holidays — Admin' };
+// Vercel: allow long imports / provisioner runs (default function timeout is 10 s)
+export const maxDuration = 60;
 
 export default async function HolidaysPage() {
   const supabase = await createClient();

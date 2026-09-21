@@ -9,6 +9,8 @@ import { retrySession } from '../sessions/actions';
 import { retryAllFailed, runProvisionerNow } from './actions';
 
 export const metadata = { title: 'Sync health — Admin' };
+// Vercel: allow long imports / provisioner runs (default function timeout is 10 s)
+export const maxDuration = 60;
 
 export default async function SyncHealthPage() {
   const supabase = await createClient();

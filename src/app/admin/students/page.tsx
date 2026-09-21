@@ -9,6 +9,8 @@ import { CsvImportCard } from '@/components/csv-import-card';
 import { createStudent, mapStudent } from './actions';
 
 export const metadata = { title: 'Students — Admin' };
+// Vercel: allow long imports / provisioner runs (default function timeout is 10 s)
+export const maxDuration = 60;
 
 type Row = Student & { profiles: { full_name: string; email: string; phone: string | null; is_active: boolean } };
 

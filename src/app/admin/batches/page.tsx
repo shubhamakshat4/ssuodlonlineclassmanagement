@@ -8,6 +8,8 @@ import { createBatch } from './actions';
 import { BatchFields } from './batch-form';
 
 export const metadata = { title: 'Batches — Admin' };
+// Vercel: allow long imports / provisioner runs (default function timeout is 10 s)
+export const maxDuration = 60;
 
 export default async function BatchesPage() {
   const supabase = await createClient();

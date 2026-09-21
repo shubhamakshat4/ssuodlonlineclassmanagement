@@ -6,6 +6,8 @@ import type { Program, Subject } from '@/lib/db/types';
 import { createSubject, deleteSubject, updateSubject } from './actions';
 
 export const metadata = { title: 'Subjects — Admin' };
+// Vercel: allow long imports / provisioner runs (default function timeout is 10 s)
+export const maxDuration = 60;
 
 export default async function SubjectsPage() {
   const supabase = await createClient();

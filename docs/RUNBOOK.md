@@ -91,3 +91,9 @@ Cron health: `select * from cron.job_run_details order by start_time desc limit 
 - Next.js server errors → `src/instrumentation.ts` → structured JSON logs (Vercel) and `ERROR_WEBHOOK_URL` if set.
 - Edge Function errors → Supabase function logs + `audit_log` (`graph.provision_failed`, `recording.harvest_failed`).
 - Rate limits: `join` 30/min per user, login 20/15 min per IP and 8/15 min per email, playback 60/min per user (`src/lib/rate-limit.ts`).
+
+## 8. Hosting on Vercel
+See `docs/VERCEL_DEPLOY.md` for the click-by-click guide (env vars, callback URLs, custom domain).
+- `vercel.json` pins functions to `syd1`, the same region as the Supabase project (ap-southeast-2).
+- Admin pages that run long actions export `maxDuration = 60`; server-action uploads are capped at 3 MB.
+- Only Next.js runs on Vercel. Edge Functions, cron, Vault and Graph secrets stay in Supabase — never put `MS_*`, `CRON_SECRET`, `SUPABASE_DB_URL` or `SUPABASE_ACCESS_TOKEN` in Vercel.

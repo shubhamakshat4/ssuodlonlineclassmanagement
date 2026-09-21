@@ -25,6 +25,8 @@ const csp = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // CSV uploads through server actions can be up to 2 MB (see csv-import); default is 1 MB.
+  experimental: { serverActions: { bodySizeLimit: '3mb' } },
   async headers() {
     return [
       {

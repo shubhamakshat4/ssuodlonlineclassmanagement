@@ -9,6 +9,8 @@ import { addExtraClass, cancelSession, generateNow, rescheduleSession, retrySess
 import { clearOverride, setOverride } from '../../teacher/sessions/actions';
 
 export const metadata = { title: 'Sessions — Admin' };
+// Vercel: allow long imports / provisioner runs (default function timeout is 10 s)
+export const maxDuration = 60;
 
 interface Params {
   batch?: string;

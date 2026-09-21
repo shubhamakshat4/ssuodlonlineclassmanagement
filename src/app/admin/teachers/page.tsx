@@ -8,6 +8,8 @@ import { createTeacher } from './actions';
 import { TeacherFields } from './teacher-fields';
 
 export const metadata = { title: 'Teachers — Admin' };
+// Vercel: allow long imports / provisioner runs (default function timeout is 10 s)
+export const maxDuration = 60;
 
 type Row = Teacher & { profiles: Profile };
 
