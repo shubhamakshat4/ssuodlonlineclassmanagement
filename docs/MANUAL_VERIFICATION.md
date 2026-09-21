@@ -29,8 +29,8 @@ everything after them.
    *Pass:* invite email arrives; clicking it lands on "Set a new password"; a password shorter than 12 characters is refused; after setting one, `/teacher` loads. Google sign-in with that teacher's address is refused with "Google sign-in is only available to students".
 9. **Create a student** with a real `@srisriuniversity.edu.in` test address; also try a `@gmail.com` address.
    *Pass:* the gmail address is rejected in the form; the university address is created and shows on `/admin/students`.
-10. **Bulk import** — paste two CSV rows (one duplicate email).
-    *Pass:* message "Imported 1 … skipped 1 existing".
+10. **CSV import** — Admin → Import: download the Programmes template, upload it unchanged, then upload it again.
+    *Pass:* first run "2 created", second run "2 updated"; a timetable file with a clashing slot reports "Teacher clash …" for that line and still creates the other rows.
 11. **Timetable** — add a slot for tomorrow's weekday; then add an overlapping slot for the same teacher in another batch.
     *Pass:* second slot is rejected with "Teacher clash: …"; first appears in the week grid.
 12. **Holidays** — add a holiday on the slot's next date, then `/admin/sessions` → "Generate sessions now".

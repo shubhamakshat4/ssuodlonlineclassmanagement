@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { ActionForm } from '@/components/action-form';
 import { Button } from '@/components/ui/button';
-import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, Field, Input, PageHeader, Select, Table, TBody, TD, TH, THead, Textarea, TR } from '@/components/ui/primitives';
+import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, Field, Input, PageHeader, Select, Table, TBody, TD, TH, THead, TR } from '@/components/ui/primitives';
 import { createClient } from '@/lib/supabase/server';
 import type { Batch, Student } from '@/lib/db/types';
 import { appConfig } from '@/lib/env';
-import { createStudent, importStudents, mapStudent } from './actions';
+import { CsvImportCard } from '@/components/csv-import-card';
+import { createStudent, mapStudent } from './actions';
 
 export const metadata = { title: 'Students — Admin' };
 
@@ -128,38 +129,7 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Bulk import (CSV)</CardTitle>
-              <CardDescription>
-                Columns: <code>roll_number,full_name,email,phone,batch_code,status</code>. Existing emails are skipped. Each row creates the Google-linked
-                account.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ActionForm action={importStudents} submitLabel="Import" pendingLabel="Importing…">
-                <Field label="Default batch (used when batch_code is empty)" htmlFor="default_batch_id">
-                  <Select id="default_batch_id" name="default_batch_id" defaultValue="">
-                    <option value="">— none —</option>
-                    {batchList.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.code}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label="CSV" htmlFor="csv">
-                  <Textarea
-                    id="csv"
-                    name="csv"
-                    rows={8}
-                    className="font-mono text-xs"
-                    placeholder={`roll_number,full_name,email,phone,batch_code,status\nODL26BBA010,Nikhil Rao,nikhil.rao.odl26@${appConfig.allowedStudentDomain},,BBA-ODL-2026,active`}
-                  />
-                </Field>
-              </ActionForm>
-            </CardContent>
-          </Card>
+          <CsvImportCard entity="students" />
         </div>
 
         <Card className="self-start">

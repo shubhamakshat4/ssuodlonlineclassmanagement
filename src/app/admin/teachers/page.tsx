@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ActionForm } from '@/components/action-form';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, PageHeader, Table, TBody, TD, TH, THead, TR } from '@/components/ui/primitives';
+import { CsvImportCard } from '@/components/csv-import-card';
 import { createClient } from '@/lib/supabase/server';
 import type { Profile, SubjectTeacher, Teacher } from '@/lib/db/types';
 import { createTeacher } from './actions';
@@ -71,6 +72,9 @@ export default async function TeachersPage() {
             </ActionForm>
           </CardContent>
         </Card>
+      </div>
+      <div className="mt-6">
+        <CsvImportCard entity="teachers" />
       </div>
     </>
   );

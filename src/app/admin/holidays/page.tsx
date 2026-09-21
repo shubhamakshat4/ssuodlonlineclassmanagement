@@ -1,5 +1,6 @@
 import { ActionForm } from '@/components/action-form';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, Field, Input, PageHeader, Select, Table, TBody, TD, TH, THead, TR } from '@/components/ui/primitives';
+import { CsvImportCard } from '@/components/csv-import-card';
 import { createClient } from '@/lib/supabase/server';
 import type { Batch, Holiday } from '@/lib/db/types';
 import { istDate } from '@/lib/domain/time';
@@ -80,6 +81,9 @@ export default async function HolidaysPage() {
             </ActionForm>
           </CardContent>
         </Card>
+      </div>
+      <div className="mt-6">
+        <CsvImportCard entity="holidays" />
       </div>
     </>
   );

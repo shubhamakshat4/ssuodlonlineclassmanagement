@@ -51,7 +51,7 @@ export function ActionForm({
     >
       {children}
       {state.error ? (
-        <Alert variant="destructive" className={cn(inline && 'p-2')}>
+        <Alert variant="destructive" className={cn('whitespace-pre-line', inline && 'p-2')}>
           {state.error}
           {state.fields ? (
             <ul className="mt-1 list-disc pl-5 text-xs">

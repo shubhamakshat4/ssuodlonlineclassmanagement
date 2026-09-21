@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ActionForm } from '@/components/action-form';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Field, Input, PageHeader, Select } from '@/components/ui/primitives';
+import { CsvImportCard } from '@/components/csv-import-card';
 import { createClient } from '@/lib/supabase/server';
 import type { Batch, BatchSubject, Profile, Subject, SubjectTeacher, TimetableSlot } from '@/lib/db/types';
 import { DAY_SHORT, hhmm, istDate } from '@/lib/domain/time';
@@ -225,6 +226,9 @@ export default async function TimetablePage({ searchParams }: { searchParams: Pr
               ))}
           </CardContent>
         </Card>
+      </div>
+      <div className="mt-6">
+        <CsvImportCard entity="timetable" />
       </div>
     </>
   );

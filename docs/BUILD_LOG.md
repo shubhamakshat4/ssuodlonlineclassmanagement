@@ -210,3 +210,15 @@ One entry per phase. Newest at the bottom.
   tiles, today's classes and quick actions; recordings as cards. No functional changes.
 - Verified: screenshots of landing, logins, student home (live class), recordings, teacher today/upcoming,
   admin overview/students/sync; all 8 Playwright journeys pass against the restyled app; lint/typecheck OK.
+
+## CSV import for every admin entity (21 Sep 2026)
+- `src/lib/admin/csv-specs.ts` (pure specs: columns, zod validation, sample rows, templates) +
+  `csv-import.ts` (row-by-row writers: programmes, batches, subjects, batch subjects, teachers, teacher
+  assignments, timetable slots, holidays, students; update/skip semantics; per-line error report).
+  One server action (`importCsv`) with file upload or paste; template download route
+  `/admin/import/template/{entity}`; `CsvImportCard` on every admin page (collapsed) and `/admin/import`
+  (all steps in order). Old students-only import replaced. `docs/CSV_IMPORT.md` generated from the specs.
+- Tested: `tests/unit/csv-specs.test.ts` (templates round-trip and validate; missing columns; line
+  numbers; normalisation; cross-field rules; booleans) — 150 tests green. Live browser run on the cloud
+  project: chained import of all entities with a bad code, unknown teacher, duplicate offering and a
+  timetable clash — each reported by line; test rows removed afterwards.

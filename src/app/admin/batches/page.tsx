@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ActionForm } from '@/components/action-form';
 import { Badge, Card, CardContent, CardHeader, CardTitle, PageHeader, Table, TBody, TD, TH, THead, TR } from '@/components/ui/primitives';
+import { CsvImportCard } from '@/components/csv-import-card';
 import { createClient } from '@/lib/supabase/server';
 import type { Batch, Program } from '@/lib/db/types';
 import { createBatch } from './actions';
@@ -69,6 +70,9 @@ export default async function BatchesPage() {
             </ActionForm>
           </CardContent>
         </Card>
+      </div>
+      <div className="mt-6">
+        <CsvImportCard entity="batches" />
       </div>
     </>
   );

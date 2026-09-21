@@ -1,5 +1,6 @@
 import { ActionForm } from '@/components/action-form';
 import { Card, CardContent, CardHeader, CardTitle, Field, Input, PageHeader, Select, Table, TBody, TD, TH, THead, TR } from '@/components/ui/primitives';
+import { CsvImportCard } from '@/components/csv-import-card';
 import { createClient } from '@/lib/supabase/server';
 import type { Program, Subject } from '@/lib/db/types';
 import { createSubject, deleteSubject, updateSubject } from './actions';
@@ -100,6 +101,9 @@ export default async function SubjectsPage() {
             </ActionForm>
           </CardContent>
         </Card>
+      </div>
+      <div className="mt-6">
+        <CsvImportCard entity="subjects" />
       </div>
     </>
   );
