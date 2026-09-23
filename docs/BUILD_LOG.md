@@ -222,3 +222,16 @@ One entry per phase. Newest at the bottom.
   numbers; normalisation; cross-field rules; booleans) — 150 tests green. Live browser run on the cloud
   project: chained import of all entities with a bad code, unknown teacher, duplicate offering and a
   timetable clash — each reported by line; test rows removed afterwards.
+
+## Phase 6 revisited — real tenant, GREEN (23 Sep 2026)
+- IT delivered the Microsoft credentials. First real spike: token, user lookup and event creation all 2xx, but
+  the event had no `onlineMeeting.joinUrl`. Diagnosed with a new `scripts/graph-doctor.ts`: the service-account
+  mailbox reports `calendar.allowedOnlineMeetingProviders: []`, while `POST /onlineMeetings` works perfectly.
+- Built the **meeting-first** fallback into `runProvisionSequence` (plus `createOnlineMeeting` on the Graph
+  client, a `no-calendar-join-url` mock failure mode, and link-carrying calendar events), and made the
+  sequence clean up a half-created event on failure. Two new unit tests; 152 tests green.
+- Second spike: **GREEN** — recordAutomatically accepted, co-organiser = real test teacher, lobby bypass,
+  presenters locked, recordings endpoint 200.
+- Live: `MS_*` + `GRAPH_MODE=real` set as Supabase secrets, functions redeployed, `demo:reset-links` run, and
+  the provisioner executed through the deployed Edge Function — all 33 upcoming sessions now carry real Teams
+  meeting links (`path=meeting-first` in the audit log).
