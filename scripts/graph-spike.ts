@@ -57,6 +57,8 @@ async function main() {
       subject: `[TEST] ODL portal spike — ${sessionId}`,
       startLocal: toGraphLocalDateTime(start),
       endLocal: toGraphLocalDateTime(end),
+      startUtc: start.toISOString(),
+      endUtc: end.toISOString(),
       timeZone: 'Asia/Kolkata',
       teacherUpn,
       teacherUserId: null,
@@ -65,7 +67,8 @@ async function main() {
     eventId = outcome.eventId;
     log('');
     log('## Result');
-    log(`- Step 1 create calendar event: OK — eventId=${outcome.eventId}`);
+    log(`- Path: ${outcome.path}${outcome.path === 'meeting-first' ? ' (Exchange did not attach a Teams link to the calendar event; created the meeting first and put its link in the invite)' : ''}`);
+    log(`- Step 1 calendar event: OK — eventId=${outcome.eventId}`);
     log(`- joinUrl: ${outcome.joinUrl}`);
     log(`- Step 2 resolve onlineMeeting: OK — meetingId=${outcome.meetingId}`);
     log(`- Step 3 meeting options: ${outcome.autoRecording ? 'OK with recordAutomatically=true' : 'recordAutomatically REJECTED — applied without it'}`);

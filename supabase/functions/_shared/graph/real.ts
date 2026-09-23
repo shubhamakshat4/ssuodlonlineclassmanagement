@@ -7,6 +7,8 @@ import {
   GraphError,
   type CreateEventInput,
   type CreatedEvent,
+  type CreateOnlineMeetingInput,
+  type CreatedOnlineMeeting,
   type DriveItem,
   type GraphCallLog,
   type GraphClient,
@@ -172,13 +174,29 @@ export class RealGraphClient implements GraphClient {
         subject: input.subject,
         start: { dateTime: input.startLocal, timeZone: input.timeZone },
         end: { dateTime: input.endLocal, timeZone: input.timeZone },
-        isOnlineMeeting: true,
-        onlineMeetingProvider: 'teamsForBusiness',
+        ...(input.joinUrl
+          ? {
+              body: { contentType: 'html', content: `<p>Join the class on Microsoft Teams:<br/><a href="${input.joinUrl}">${input.joinUrl}</a></p>` },
+              location: { displayName: 'Microsoft Teams Meeting' },
+            }
+          : { isOnlineMeeting: true, onlineMeetingProvider: 'teamsForBusiness' }),
         attendees: input.attendeeUpns.map((address) => ({ emailAddress: { address }, type: 'required' })),
       },
       correlationId,
     );
     return { eventId: res.id, joinUrl: res.onlineMeeting?.joinUrl ?? null };
+  }
+
+  async createOnlineMeeting(input: CreateOnlineMeetingInput, correlationId?: string): Promise<CreatedOnlineMeeting> {
+    const res = await this.call<{ id: string; joinUrl?: string; joinWebUrl?: string }>(
+      'POST',
+      `/users/${this.cfg.serviceAccountUserId}/onlineMeetings`,
+      { subject: input.subject, startDateTime: input.startUtc, endDateTime: input.endUtc },
+      correlationId,
+    );
+    const joinUrl = res.joinUrl ?? res.joinWebUrl;
+    if (!joinUrl) throw new GraphError('onlineMeeting created without a joinUrl', 502, 'noJoinUrl', null, 'POST /users/{sa}/onlineMeetings');
+    return { meetingId: res.id, joinUrl };
   }
 
   async findOnlineMeetingByJoinUrl(joinUrl: string, correlationId?: string): Promise<string | null> {

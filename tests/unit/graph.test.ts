@@ -113,6 +113,8 @@ describe('runProvisionSequence (mock)', () => {
       subject: 'Financial Management — BBA-ODL-2025',
       startLocal: '2026-01-12T10:00:00',
       endLocal: '2026-01-12T11:00:00',
+      startUtc: '2026-01-12T04:30:00.000Z',
+      endUtc: '2026-01-12T05:30:00.000Z',
       timeZone: 'Asia/Kolkata',
       teacherUpn: 'teacher@x.onmicrosoft.com',
       teacherUserId: null,
@@ -144,6 +146,8 @@ describe('runProvisionSequence (mock)', () => {
       subject: 'x',
       startLocal: 'a',
       endLocal: 'b',
+      startUtc: '2026-01-12T04:30:00.000Z',
+      endUtc: '2026-01-12T05:30:00.000Z',
       timeZone: 'Asia/Kolkata',
       teacherUpn: 't@x',
       teacherUserId: 'oid',
@@ -155,11 +159,64 @@ describe('runProvisionSequence (mock)', () => {
     expect(g.meetings.get(out.meetingId)?.options?.allowedPresenters).toBe('roleIsPresenter');
   });
 
+  it('falls back to meeting-first when Exchange attaches no Teams link to the event', async () => {
+    const g = new MockGraphClient();
+    g.failure = 'no-calendar-join-url';
+    g.users.set('t@x', 'oid');
+    const out = await runProvisionSequence(g, {
+      sessionId: 's',
+      subject: 'Subject — BATCH',
+      startLocal: '2026-01-12T10:00:00',
+      endLocal: '2026-01-12T11:00:00',
+      startUtc: '2026-01-12T04:30:00.000Z',
+      endUtc: '2026-01-12T05:30:00.000Z',
+      timeZone: 'Asia/Kolkata',
+      teacherUpn: 't@x',
+      teacherUserId: 'oid',
+      recordAutomatically: true,
+    });
+    expect(out.path).toBe('meeting-first');
+    expect(out.joinUrl).toMatch(/^https:\/\/teams\.microsoft\.com\//);
+    expect(out.autoRecording).toBe(true);
+    // the meeting carries the hardened options, and the surviving event advertises the same link
+    expect(g.meetings.get(out.meetingId)?.options?.coorganizers).toEqual([{ upn: 't@x', userId: 'oid' }]);
+    const live = [...g.events.values()].filter((e) => !e.deleted);
+    expect(live).toHaveLength(1);
+    expect(live[0].id).toBe(out.eventId);
+    expect(live[0].joinUrl).toBe(out.joinUrl);
+    expect(live[0].attendees).toEqual(['t@x']);
+    // the first, link-less event was cleaned up
+    expect([...g.events.values()].filter((e) => e.deleted)).toHaveLength(1);
+  });
+
+  it('deletes a half-provisioned event when a later step fails', async () => {
+    const g = new MockGraphClient();
+    // step 3 fails with a transient error, which must not be swallowed by the recording fallback
+    g.patchOnlineMeetingOptions = async () => {
+      throw new GraphError('Graph 500 InternalServerError', 500, 'InternalServerError', null, 'PATCH /users/{sa}/onlineMeetings/{id}');
+    };
+    await expect(
+      runProvisionSequence(g, {
+        sessionId: 's',
+        subject: 'x',
+        startLocal: 'a',
+        endLocal: 'b',
+        startUtc: '2026-01-12T04:30:00.000Z',
+        endUtc: '2026-01-12T05:30:00.000Z',
+        timeZone: 'Asia/Kolkata',
+        teacherUpn: 't@x',
+        teacherUserId: 'oid',
+        recordAutomatically: true,
+      }),
+    ).rejects.toMatchObject({ status: 500 });
+    expect([...g.events.values()].every((e) => e.deleted)).toBe(true);
+  });
+
   it('propagates the 403 access-policy failure untouched', async () => {
     const g = new MockGraphClient();
     g.failure = 'access-policy-403';
     await expect(
-      runProvisionSequence(g, { sessionId: 's', subject: 'x', startLocal: 'a', endLocal: 'b', timeZone: 'Asia/Kolkata', teacherUpn: 't@x', teacherUserId: 'oid', recordAutomatically: true }),
+      runProvisionSequence(g, { sessionId: 's', subject: 'x', startLocal: 'a', endLocal: 'b', startUtc: '2026-01-12T04:30:00.000Z', endUtc: '2026-01-12T05:30:00.000Z', timeZone: 'Asia/Kolkata', teacherUpn: 't@x', teacherUserId: 'oid', recordAutomatically: true }),
     ).rejects.toMatchObject({ status: 403 });
   });
 });

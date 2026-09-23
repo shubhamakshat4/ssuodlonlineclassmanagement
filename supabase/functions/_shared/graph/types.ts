@@ -27,7 +27,21 @@ export interface GraphCallLog {
   correlationId?: string; // our own id, e.g. the session id
 }
 
+export interface CreateOnlineMeetingInput {
+  subject: string;
+  /** ISO UTC */
+  startUtc: string;
+  endUtc: string;
+}
+
+export interface CreatedOnlineMeeting {
+  meetingId: string;
+  joinUrl: string;
+}
+
 export interface CreateEventInput {
+  /** when set, the event body/location advertise this Teams link (hybrid path) */
+  joinUrl?: string | null;
   /** used as Graph transactionId for idempotent retries */
   transactionId: string;
   subject: string;
@@ -96,6 +110,8 @@ export interface GraphClient {
   readonly mode: 'real' | 'mock';
   /** §7.2 step 1 */
   createCalendarEvent(input: CreateEventInput, correlationId?: string): Promise<CreatedEvent>;
+  /** Fallback when Exchange does not attach a Teams link to calendar events: make the meeting directly. */
+  createOnlineMeeting(input: CreateOnlineMeetingInput, correlationId?: string): Promise<CreatedOnlineMeeting>;
   /** §7.2 step 2 */
   findOnlineMeetingByJoinUrl(joinUrl: string, correlationId?: string): Promise<string | null>;
   /** §7.2 step 3 */

@@ -132,6 +132,8 @@ export async function runProvisionMeetings(db: DbClient, graph: GraphClient, opt
         subject: `${s.subject_name} — ${s.batch_code}`,
         startLocal,
         endLocal,
+        startUtc: new Date(s.scheduled_start).toISOString(),
+        endUtc: new Date(s.scheduled_end).toISOString(),
         timeZone: tz,
         teacherUpn: s.teacher_upn,
         teacherUserId: s.teacher_entra_user_id,
@@ -155,7 +157,7 @@ export async function runProvisionMeetings(db: DbClient, graph: GraphClient, opt
           .select('id'),
         'mark provisioned',
       );
-      await audit(db, 'graph.meeting_provisioned', 'class_sessions', s.id, { eventId: out.eventId, meetingId: out.meetingId, autoRecording: out.autoRecording, plan });
+      await audit(db, 'graph.meeting_provisioned', 'class_sessions', s.id, { eventId: out.eventId, meetingId: out.meetingId, autoRecording: out.autoRecording, path: out.path, plan });
       summary.provisioned++;
     } catch (e) {
       const next = afterFailure(s.sync_attempts);

@@ -7,6 +7,8 @@ import {
   GraphError,
   type CreateEventInput,
   type CreatedEvent,
+  type CreateOnlineMeetingInput,
+  type CreatedOnlineMeeting,
   type DriveItem,
   type GraphCallLog,
   type GraphClient,
@@ -14,7 +16,7 @@ import {
   type MeetingOptions,
 } from './types.ts';
 
-export type MockFailure = 'none' | 'access-policy-403' | 'record-automatically-400' | 'throttle-429-once' | 'network';
+export type MockFailure = 'none' | 'access-policy-403' | 'record-automatically-400' | 'throttle-429-once' | 'network' | 'no-calendar-join-url';
 
 export interface MockEvent {
   id: string;
@@ -82,12 +84,30 @@ export class MockGraphClient implements GraphClient {
     }
     const n = ++this.seq;
     const id = `mock-event-${n}`;
+    // Exchange did not attach a Teams link (mirrors a mailbox without teamsForBusiness enabled)
+    if (this.failure === 'no-calendar-join-url' && !input.joinUrl) {
+      this.events.set(id, { id, subject: input.subject, startLocal: input.startLocal, endLocal: input.endLocal, timeZone: input.timeZone, attendees: input.attendeeUpns, joinUrl: '', meetingId: '', transactionId: input.transactionId, deleted: false });
+      await this.log(endpoint, 201, correlationId);
+      return { eventId: id, joinUrl: null };
+    }
     const meetingId = `mock-meeting-${n}`;
-    const joinUrl = `https://teams.microsoft.com/l/meetup-join/mock/${n}`;
+    const joinUrl = input.joinUrl ?? `https://teams.microsoft.com/l/meetup-join/mock/${n}`;
     this.events.set(id, { id, subject: input.subject, startLocal: input.startLocal, endLocal: input.endLocal, timeZone: input.timeZone, attendees: input.attendeeUpns, joinUrl, meetingId, transactionId: input.transactionId, deleted: false });
-    this.meetings.set(meetingId, { id: meetingId, joinUrl, options: null, recordings: [] });
+    if (!input.joinUrl) this.meetings.set(meetingId, { id: meetingId, joinUrl, options: null, recordings: [] });
     await this.log(endpoint, 201, correlationId);
     return { eventId: id, joinUrl };
+  }
+
+  /** Direct Teams meeting (hybrid path). */
+  async createOnlineMeeting(input: CreateOnlineMeetingInput, correlationId?: string): Promise<CreatedOnlineMeeting> {
+    const endpoint = 'POST /users/{sa}/onlineMeetings';
+    await this.maybeFail(endpoint, correlationId);
+    const n = ++this.seq;
+    const meetingId = `mock-meeting-${n}`;
+    const joinUrl = `https://teams.microsoft.com/l/meetup-join/mock/${n}`;
+    this.meetings.set(meetingId, { id: meetingId, joinUrl, options: null, recordings: [] });
+    await this.log(endpoint, 201, correlationId);
+    return { meetingId, joinUrl };
   }
 
   async findOnlineMeetingByJoinUrl(joinUrl: string, correlationId?: string): Promise<string | null> {
