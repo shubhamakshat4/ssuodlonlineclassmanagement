@@ -18,6 +18,9 @@ Things that could not be finished in this build, what was tried, and exactly wha
 ## B3 — Faculty Microsoft 365 addresses not yet supplied
 - **What:** the 21 faculty from the timetable were created with placeholder logins (`first.last@srisriuniversity.edu.in`) and placeholder UPNs (`…@srisriuniversity.onmicrosoft.com`).
 - **Impact:** faculty cannot sign in until their real address is set, and Teams co-organiser assignment is nominal (the meeting is still created and students can join).
+- **Note:** those mailboxes do not exist, so an invite email never arrives. Set a password directly with
+  `npm run auth:set-password -- <login email> '<password>'` if a faculty member has to sign in before IT
+  supplies the real address.
 - **Needs:** the list of faculty M365 sign-in addresses from IT. Then update each on **Admin → Teachers**, or re-import via **Admin → Import → Teachers** (matched on email), and run the provisioner again so the co-organiser is applied.
 
 ## B4 — Two B.Com class groups have students but no classes
@@ -52,9 +55,16 @@ Things that could not be finished in this build, what was tried, and exactly wha
 - **Done:** the suites now read `E2E_ADMIN_PASSWORD`, `E2E_TEACHER_PASSWORD` and
   `E2E_SEED_TEACHER_PASSWORD` from `.env.local` (placeholders in `.env.local.example`); README and DEMO.md
   no longer print the password.
-- **Needs (user):** change the admin account's password in Supabase - Authentication - Users, then update
-  `E2E_ADMIN_PASSWORD` in `.env.local` and anywhere it was shared (the email to the ODL team). Removing it
-  from the repository does not remove it from git history, so rotation is the fix. `supabase/seed.sql`
+- **Needs (user):** give the account a new password, then update `E2E_ADMIN_PASSWORD` in `.env.local` and
+  anywhere it was shared (the email to the ODL team). Removing it from the repository does not remove it
+  from git history, so rotation is the fix. Two ways, neither needing an email:
+  - **In the portal** - sign in as the admin and use **Change password** in the header (`/account/password`).
+  - **From the command line**, for an account whose password is unknown or whose mailbox does not exist:
+
+        npm run auth:set-password -- odl.admin@srisriuniversity.edu.in 'NewPassword2026'
+
+  The Supabase dashboard only offers "send a recovery email", which cannot work while the ODL admin address
+  is not a real mailbox. `supabase/seed.sql`
   still contains it as the password its own local fixture creates; that is fine once the live account no
   longer uses it.
 

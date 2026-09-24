@@ -21,7 +21,8 @@
     "demo:reset-links": "tsx scripts/demo-seed.ts --reset-links",
     "smoke:cloud": "tsx scripts/smoke-cloud.ts",
     "data:import": "tsx scripts/import-real-data.ts",
-    "data:verify": "tsx scripts/verify-timetable.ts"
+    "data:verify": "tsx scripts/verify-timetable.ts",
+    "auth:set-password": "tsx scripts/set-password.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",

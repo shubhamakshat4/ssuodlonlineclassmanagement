@@ -280,3 +280,18 @@ One entry per phase. Newest at the bottom.
   the new fixture; verified afterwards that the database still holds exactly 331 sessions and no leftover
   E2E rows.
 
+## Changing a portal password without an email (24 Sep 2026)
+- **The page existed but was unreachable.** `/account/password` was only entered by a forced redirect on
+  first sign-in; nothing linked to it afterwards. Added **Change password** to the header for admin and
+  faculty. Students are not offered it - they sign in with Google and have no portal password.
+- **New script** `npm run auth:set-password -- <email> '<password>'`, or `--from-env <VAR>` to take it from
+  `.env.local` so it stays out of shell history. It uses the Admin API, which sets the hash immediately.
+  The Supabase dashboard only offers "send a recovery email", which cannot work for the ODL admin address
+  or the 21 placeholder faculty logins, because those mailboxes do not exist.
+- **Where passwords live:** Supabase Auth (GoTrue) owns them, bcrypt-hashed in `auth.users`. This
+  application never stores or compares a password; `src/lib/auth/password.ts` only enforces a policy
+  (12 characters, a letter and a digit) on the forms that submit a new one.
+- **Test diagnostics:** a rejected sign-in used to surface as a 120 s navigation timeout. `signInWithPassword`
+  now waits for the login error (`data-testid="login-error"`) as well and fails in seconds, naming the env
+  var to check and the script to run.
+

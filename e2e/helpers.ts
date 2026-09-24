@@ -174,5 +174,16 @@ export async function signInWithPassword(page: Page, email: string, password: st
   await page.fill('#email', email);
   await page.fill('#password', password);
   await page.click('button[type=submit]');
-  await page.waitForURL((u) => !u.pathname.startsWith('/login'));
+  // Report a rejected password straight away instead of timing out on the navigation.
+  const landed = page.waitForURL((u) => !u.pathname.startsWith('/login')).then(() => 'ok' as const);
+  const error = page.getByTestId('login-error');
+  const refused = error
+    .waitFor({ state: 'visible', timeout: 15_000 })
+    .then(() => 'refused' as const)
+    .catch(() => 'ok' as const);
+  if ((await Promise.race([landed, refused])) === 'refused') {
+    const detail = (await error.textContent())?.trim();
+    throw new Error(`sign-in refused for ${email}: ${detail ?? 'no message'} - check E2E_ADMIN_PASSWORD / E2E_TEACHER_PASSWORD in .env.local, and npm run auth:set-password to make the account match`);
+  }
+  await landed;
 }

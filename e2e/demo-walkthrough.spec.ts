@@ -34,6 +34,11 @@ test('admin can reach every screen with data', async ({ page, baseURL }) => {
     await page.goto(`${baseURL}${path}`);
     await expect(page.locator('body'), path).toContainText(marker);
   }
+  // password-based roles can reach the change-password page from the header
+  await expect(page.getByRole('link', { name: /Change password/i })).toBeVisible();
+  await page.goto(`${baseURL}/account/password`);
+  await expect(page.locator('#password')).toBeVisible();
+
   // every student row offers an explicit Edit button, and the form exposes both class groups
   await page.goto(`${baseURL}/admin/students`);
   await expect(page.getByRole('columnheader', { name: 'Second group' })).toBeVisible();
@@ -62,6 +67,8 @@ test('student sees classes, timetable and profile', async ({ page, baseURL }) =>
   await expect(page.locator('body')).toContainText(/All scheduled classes/i);
   await page.goto(`${baseURL}/student/profile`);
   await expect(page.locator('body')).toContainText(/Roll number/i);
+  // students sign in with Google, so they are never offered a portal password
+  await expect(page.getByRole('link', { name: /Change password/i })).toHaveCount(0);
 });
 
 test('roles cannot enter each other’s area', async ({ page, baseURL }) => {
