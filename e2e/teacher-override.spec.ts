@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { adminClient, clearOverride, loadFixture, makeLive, restoreSession, signInStudent, signInWithPassword, TEACHER_TEST_PASSWORD, type Fixture } from './helpers';
+import { adminClient, clearOverride, disposeFixture, loadFixture, makeLive, signInStudent, signInWithPassword, TEACHER_TEST_PASSWORD, type Fixture } from './helpers';
 
 /**
  * Journey 2 (SPEC §14): teacher overrides a link → the student's dashboard shows the new URL and the
- * "Link updated" badge → reverting re-queues a fresh Teams meeting.
+ * "Link updated" badge → reverting re-queues a fresh Teams meeting. Runs on the fixture's throwaway
+ * session, so no real class is touched.
  */
 test.describe.configure({ mode: 'serial' });
 
@@ -11,11 +12,11 @@ let f: Fixture;
 
 test.beforeAll(async () => {
   f = await loadFixture();
-  await makeLive(f.sessionId, f.originalJoinUrl);
+  await makeLive(f.sessionId);
 });
 test.afterAll(async () => {
-  await clearOverride(f.sessionId);
-  await restoreSession(f.sessionId, f.originalStart, f.originalEnd, f.studentId, f.originalJoinUrl);
+  await clearOverride(f.sessionId, f.studentId);
+  await disposeFixture(f);
 });
 
 test('teacher sets a Google Meet link; student sees the badge and joins via the new link', async ({ browser, baseURL }) => {

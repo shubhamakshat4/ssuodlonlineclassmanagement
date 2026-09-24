@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { ActionForm } from '@/components/action-form';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, Field, Input, PageHeader, Select, Table, TBody, TD, TH, THead, TR } from '@/components/ui/primitives';
 import { createClient } from '@/lib/supabase/server';
 import type { Batch, Student } from '@/lib/db/types';
@@ -28,7 +28,8 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
     .select('*, profiles!inner(full_name, email, phone, is_active)', { count: 'exact' })
     .order('roll_number')
     .range(from, from + PAGE_SIZE - 1);
-  if (batch) query = query.eq('batch_id', batch);
+  // A student may follow two class groups, so the filter matches either of them.
+  if (batch) query = query.or(`batch_id.eq.${batch},secondary_batch_id.eq.${batch}`);
   if (q) query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`, { referencedTable: 'profiles' });
   const [{ data: students, count }, { data: batches }, { data: unmappedData }] = await Promise.all([
     query,
@@ -80,6 +81,14 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
                           </option>
                         ))}
                       </Select>
+                      <Select name="secondary_batch_id" defaultValue="" className="w-48" aria-label="Second class group">
+                        <option value="">— no second group —</option>
+                        {batchList.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.code}
+                          </option>
+                        ))}
+                      </Select>
                     </ActionForm>
                   </div>
                 ))}
@@ -113,7 +122,9 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
                     <TH>Name</TH>
                     <TH>Email</TH>
                     <TH>Class group</TH>
+                    <TH>Second group</TH>
                     <TH>Status</TH>
+                    <TH className="text-right">Edit</TH>
                   </TR>
                 </THead>
                 <TBody>
@@ -132,14 +143,22 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
                       </TD>
                       <TD>{s.profiles.email}</TD>
                       <TD className="whitespace-nowrap font-mono">{batchById.get(s.batch_id)?.code ?? '—'}</TD>
+                      <TD className="whitespace-nowrap font-mono">
+                        {s.secondary_batch_id ? <Badge variant="info">{batchById.get(s.secondary_batch_id)?.code ?? '—'}</Badge> : <span className="text-muted-foreground">—</span>}
+                      </TD>
                       <TD>
                         <Badge variant={s.status === 'active' ? 'success' : 'secondary'}>{s.status}</Badge>
+                      </TD>
+                      <TD className="text-right">
+                        <Link href={`/admin/students/${s.id}`} className={buttonVariants({ variant: 'outline', size: 'sm' })} data-testid={`edit-${s.id}`}>
+                          Edit
+                        </Link>
                       </TD>
                     </TR>
                   ))}
                   {rows.length === 0 ? (
                     <TR>
-                      <TD colSpan={5} className="text-muted-foreground">
+                      <TD colSpan={7} className="text-muted-foreground">
                         No students match.
                       </TD>
                     </TR>
@@ -198,6 +217,16 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
                   <option value="" disabled>
                     Select…
                   </option>
+                  {batchList.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.code}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Second class group (optional)" htmlFor="new_secondary_batch_id" hint="Only when the student also attends another semester.">
+                <Select id="new_secondary_batch_id" name="secondary_batch_id" defaultValue="">
+                  <option value="">— none —</option>
                   {batchList.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.code}

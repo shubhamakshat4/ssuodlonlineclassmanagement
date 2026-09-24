@@ -13,12 +13,15 @@ const createSchema = z.object({
   phone: z.string().optional(),
   roll_number: z.string().min(2).transform((s) => s.toUpperCase()),
   batch_id: z.string().uuid(),
+  secondary_batch_id: z.string().uuid().optional(),
   status: STATUS.default('active'),
 });
 
 export const createStudent = formAction({ roles: ['admin'], schema: createSchema, revalidate: ['/admin/students', '/admin'] }, async (input, { supabase }) => {
   const userId = await provisionUser({ email: input.email, fullName: input.full_name, phone: input.phone, role: 'student' });
-  const { error } = await supabase.from('students').insert({ id: userId, roll_number: input.roll_number, batch_id: input.batch_id, status: input.status });
+  const { error } = await supabase
+    .from('students')
+    .insert({ id: userId, roll_number: input.roll_number, batch_id: input.batch_id, secondary_batch_id: input.secondary_batch_id ?? null, status: input.status });
   if (error) {
     await deleteUser(userId);
     throw error;

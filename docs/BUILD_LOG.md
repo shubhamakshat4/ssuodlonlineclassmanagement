@@ -257,3 +257,26 @@ One entry per phase. Newest at the bottom.
   real-data sweep of all three roles passed, including a real Teams join that wrote an attendance row.
 - **Not done**: faculty real emails / M365 UPNs (awaiting the list); B.Com semesters 2 and 4 have students
   but no classes in the source timetable, so those two students see an empty schedule.
+
+## Admin editing of students, and an E2E fixture that no longer moves real classes (24 Sep 2026)
+- **Editing was reachable but invisible.** The student edit form (including the second class group) already
+  existed at `/admin/students/[id]`, but the only way in was clicking the student's name. Added an explicit
+  **Edit** button on every row of Students and Teachers, matching the "Manage" column Class groups already
+  had.
+- **The second group is now visible where it matters**: a `Second group` column on the Students list, the
+  class-group filter matches either group, the New student form and the "map a signed-in student" form both
+  take an optional second group (`createStudent` now accepts it), and Class groups shows `+n second` for
+  students following it as their additional semester.
+- **E2E fixture rewritten.** It used to move a real class to "now" for the join journeys and restore it
+  afterwards; a failed run left the class displaced and the next run then treated the displaced time as the
+  original. `loadFixture()` now inserts a throwaway ad-hoc session (topic `E2E test class (safe to delete)`),
+  runs the live-join journeys on that and deletes it in `afterAll`; `makeLive()` will not update a row whose
+  topic is not that marker, so a real class cannot be moved by the suite. The "join opens later" assertion
+  uses a real future class, read-only, chosen at least 30 minutes out.
+- **New check**: `npm run data:verify` (`-- --apply` to repair) compares every session against
+  `docs/ODL Sunday Online Timetable.xlsx`, reports off-Sunday classes and per-date count differences, and
+  restores a displaced class to its slot. Two sessions currently need it — see BLOCKERS B5.
+- **Tested**: lint, typecheck, 159/159 unit + RLS, `next build`, Playwright 9/9 against the live data with
+  the new fixture; verified afterwards that the database still holds exactly 331 sessions and no leftover
+  E2E rows.
+

@@ -24,3 +24,22 @@ Things that could not be finished in this build, what was tried, and exactly wha
 - **What:** `BCOM-S2` (1 student) and `BCOM-S4` (1 student) exist in the enrolment data, but the source timetable only schedules B.Com Semester 1.
 - **Impact:** those two students see "no classes scheduled".
 - **Needs:** either add their classes to the timetable (Admin → Import → Timetable slots, or the Sessions screen), or confirm those students are not taking online classes this term.
+
+## B5 - Two class sessions are displaced and need a database write to repair
+- **What:** the old E2E fixture moved a real class to "now" so the join journey had a live lesson, then
+  restored it. A run that failed before the restore left the class displaced, and the next run captured
+  the displaced time as the "original" - so it could never find its way back. Two sessions are affected:
+  `MHS-S2 English Communication` and `MOD-S4 Dissertation`, both belonging to **Sunday 27 Sep 2026,
+  09:00-10:00 IST**. They currently sit on Thu 24 Sep 2026 and show as "live now" to those students.
+  One attendance row was written from a headless test browser.
+- **Fixed at the source:** the suite no longer touches a real class. `loadFixture()` inserts a throwaway
+  ad-hoc session (topic `E2E test class (safe to delete)`), uses that for the live-join journeys and
+  deletes it afterwards; `makeLive()` refuses to update any row without that topic.
+- **Needs:** one command, which writes to the live database:
+
+      npm run data:verify              # dry run - shows what it would change
+      npm run data:verify -- --apply   # restores both sessions, clears the test attendance row
+
+  The dry run compares every session against `docs/ODL Sunday Online Timetable.xlsx` and reports
+  anything off-Sunday or any date whose class count differs from the workbook. Worth running after any
+  bulk edit.

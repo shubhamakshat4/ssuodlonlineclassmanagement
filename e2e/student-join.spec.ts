@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { adminClient, clearOverride, loadFixture, makeLive, restoreSession, signInStudent, type Fixture } from './helpers';
+import { adminClient, disposeFixture, loadFixture, makeLive, signInStudent, type Fixture } from './helpers';
 
 /**
  * Journey 1 (SPEC §14): student signs in → sees today's class → clicks Join → attendance row exists.
- * Runs against whatever data is loaded (demo seed or the live ODL timetable).
+ * Runs against whatever data is loaded (demo seed or the live ODL timetable). The live class is a
+ * throwaway session created by the fixture; real classes are only read.
  */
 test.describe.configure({ mode: 'serial' });
 
@@ -13,12 +14,11 @@ test.beforeAll(async () => {
   f = await loadFixture();
 });
 test.afterAll(async () => {
-  await restoreSession(f.sessionId, f.originalStart, f.originalEnd, f.studentId, f.originalJoinUrl);
-  await clearOverride(f.sessionId);
+  await disposeFixture(f);
 });
 
 test('student sees the live class, joins, and an attendance row is written', async ({ page, context, baseURL }) => {
-  await makeLive(f.sessionId, f.originalJoinUrl);
+  await makeLive(f.sessionId);
   await signInStudent(page, f.studentEmail, baseURL);
 
   const card = page.getByTestId(`session-${f.sessionId}`);
@@ -45,14 +45,14 @@ test('student sees the live class, joins, and an attendance row is written', asy
 });
 
 test('Join stays available before the window and explains when it opens', async ({ page, baseURL }) => {
-  await restoreSession(f.sessionId, f.originalStart, f.originalEnd, f.studentId, f.originalJoinUrl);
   await signInStudent(page, f.studentEmail, baseURL);
-  const later = page.getByTestId(`session-${f.laterSessionId}`).or(page.getByTestId(`session-${f.sessionId}`)).first();
+  // the group's next real class, which is still in the future — never modified by the suite
+  const later = page.getByTestId(`session-${f.laterSessionId}`);
   const button = later.getByRole('button').first();
   await expect(button).toBeEnabled();
   await expect(button).toContainText(/Join Now/i);
   await button.click();
-  await expect(page.getByTestId('join-note').first()).toContainText(/minutes before the scheduled time/i);
+  await expect(later.getByTestId('join-note')).toContainText(/minutes before the scheduled time/i);
 });
 
 test('a student from another class group cannot see the class', async ({ page, baseURL }) => {

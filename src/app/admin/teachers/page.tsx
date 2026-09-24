@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ActionForm } from '@/components/action-form';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, PageHeader, Table, TBody, TD, TH, THead, TR } from '@/components/ui/primitives';
+import { buttonVariants } from '@/components/ui/button';
 import { CsvImportCard } from '@/components/csv-import-card';
 import { createClient } from '@/lib/supabase/server';
 import type { Profile, SubjectTeacher, Teacher } from '@/lib/db/types';
@@ -36,6 +37,7 @@ export default async function TeachersPage() {
                   <TH>Login email</TH>
                   <TH>M365 UPN</TH>
                   <TH>Subjects</TH>
+                  <TH className="text-right">Edit</TH>
                 </TR>
               </THead>
               <TBody>
@@ -57,6 +59,11 @@ export default async function TeachersPage() {
                       {t.entra_upn} {t.entra_user_id ? <Badge variant="success">resolved</Badge> : <Badge variant="warning">unresolved</Badge>}
                     </TD>
                     <TD>{assignmentCount.get(t.id) ?? 0}</TD>
+                    <TD className="text-right">
+                      <Link href={`/admin/teachers/${t.id}`} className={buttonVariants({ variant: 'outline', size: 'sm' })} data-testid={`edit-${t.id}`}>
+                        Edit
+                      </Link>
+                    </TD>
                   </TR>
                 ))}
               </TBody>

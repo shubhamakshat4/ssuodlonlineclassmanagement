@@ -2,9 +2,14 @@
  * E2E helpers. Require a running app plus NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
  * and SUPABASE_SERVICE_ROLE_KEY in the environment.
  *
- * The suite is data-agnostic: instead of hard-coded seed accounts it resolves a real student,
- * teacher and session from whatever data is loaded, so it runs against the demo seed and against
- * the live ODL data alike.
+ * The suite is data-agnostic: instead of hard-coded seed accounts it resolves a real student and
+ * teacher from whatever data is loaded, so it runs against the demo seed and the live ODL data alike.
+ *
+ * It never moves a real class. The join journeys need a session that is live *now*, so the fixture
+ * INSERTS a throwaway ad-hoc session for the chosen group and deletes it afterwards (attendance
+ * cascades). Rewriting a real session's times was the earlier approach and it was unsafe: when a run
+ * failed before the restore, the next run captured the displaced time as the "original", so the
+ * class could never find its way back to its timetable slot.
  *
  * Students sign in with Google in production, which cannot be automated. For E2E we mint a magic
  * link with the Admin API and open it — the resulting session is identical for the app.
@@ -18,6 +23,8 @@ import type { Page } from '@playwright/test';
 export const ADMIN = { email: 'odl.admin@srisriuniversity.edu.in', password: 'AdminPass12345' };
 /** Password we set on the picked faculty account so the teacher journey can sign in. */
 export const TEACHER_TEST_PASSWORD = 'FacultyTest12345';
+/** Topic stamped on sessions the suite creates, so a stray one is recognisable and sweepable. */
+export const E2E_TOPIC = 'E2E test class (safe to delete)';
 
 export function adminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -36,34 +43,29 @@ export interface Fixture {
   otherStudentEmail: string;
   teacherEmail: string;
   teacherId: string;
-  /** upcoming session of the student's group, moved to "live" by makeLive() */
+  /** throwaway session created by the fixture; the only session row the suite may modify */
   sessionId: string;
-  originalStart: string;
-  originalEnd: string;
-  /** the Teams link the session had when the fixture was taken, restored after each spec */
-  originalJoinUrl: string | null;
-  /** another upcoming session of the same group, left in the future */
+  /** a real, future class of the same group — read only, never moved */
   laterSessionId: string;
 }
 
-/** Pick a student, their teacher and two upcoming sessions from the live data. */
+/** Pick a student and their teacher from the live data, then create a throwaway class for the run. */
 export async function loadFixture(): Promise<Fixture> {
   const admin = adminClient();
+  await disposeFixture(); // sweep up anything a crashed run left behind
   const { data: sessions, error } = await admin
     .from('v_class_sessions')
-    .select('id, batch_id, batch_code, teacher_id, scheduled_start, scheduled_end, teams_join_url, effective_join_url')
+    .select('id, batch_id, batch_code, batch_subject_id, teacher_id, scheduled_start, teams_join_url, effective_join_url')
     .eq('status', 'scheduled')
-    .gt('scheduled_end', new Date().toISOString())
+    // comfortably in the future, so the "join opens later" assertion is not raced by a live class
+    .gt('scheduled_start', new Date(Date.now() + 30 * 60_000).toISOString())
     .order('scheduled_start')
     .limit(400);
   if (error) throw new Error(error.message);
   if (!sessions?.length) throw new Error('no upcoming sessions in the database — load data first');
 
-  // a group that has at least two upcoming sessions and at least one student with a real login
   for (const s of sessions) {
-    if (!s.effective_join_url) continue; // need a joinable class for the join journey
-    const inGroup = sessions.filter((x) => x.batch_id === s.batch_id);
-    if (inGroup.length < 2) continue;
+    if (!s.effective_join_url) continue; // the join journey needs a joinable class
     const { data: students } = await admin
       .from('students')
       .select('id, profiles!inner(email)')
@@ -88,6 +90,24 @@ export async function loadFixture(): Promise<Fixture> {
       app_metadata: { role: 'teacher', provisioned_by: 'admin', must_change_password: false },
     });
 
+    const { data: created, error: insertError } = await admin
+      .from('class_sessions')
+      .insert({
+        batch_subject_id: s.batch_subject_id,
+        teacher_id: s.teacher_id,
+        timetable_slot_id: null,
+        scheduled_start: new Date(Date.now() - 60_000).toISOString(),
+        scheduled_end: new Date(Date.now() + 3_600_000).toISOString(),
+        status: 'scheduled',
+        topic: E2E_TOPIC,
+        provider: 'teams',
+        teams_join_url: s.teams_join_url ?? s.effective_join_url,
+        sync_status: 'provisioned',
+      })
+      .select('id')
+      .single();
+    if (insertError) throw new Error(`could not create the throwaway session: ${insertError.message}`);
+
     return {
       studentEmail: student.profiles.email,
       studentId: student.id,
@@ -96,49 +116,39 @@ export async function loadFixture(): Promise<Fixture> {
       otherStudentEmail: otherStudent.profiles.email,
       teacherEmail: teacher.email,
       teacherId: teacher.id,
-      sessionId: s.id,
-      originalStart: s.scheduled_start,
-      originalEnd: s.scheduled_end,
-      originalJoinUrl: s.teams_join_url,
-      laterSessionId: inGroup[1].id,
+      sessionId: (created as { id: string }).id,
+      laterSessionId: s.id,
     };
   }
-  throw new Error('could not find a class group with two sessions and an active student');
+  throw new Error('could not find a joinable upcoming class with an active student');
 }
 
-/** Move a session so its join window is open right now, with a working link. */
-export async function makeLive(sessionId: string, joinUrl?: string | null) {
+/** Delete the throwaway session (attendance cascades) plus any left by an earlier run. */
+export async function disposeFixture(f?: Pick<Fixture, 'sessionId'>) {
+  const admin = adminClient();
+  if (f?.sessionId) await admin.from('class_sessions').delete().eq('id', f.sessionId);
+  await admin.from('class_sessions').delete().eq('topic', E2E_TOPIC);
+}
+
+/** Put the throwaway session's join window back over "now". Only ever called on a fixture session. */
+export async function makeLive(sessionId: string) {
   const admin = adminClient();
   await admin
     .from('class_sessions')
     .update({
       scheduled_start: new Date(Date.now() - 60_000).toISOString(),
-      scheduled_end: new Date(Date.now() + 3600_000).toISOString(),
+      scheduled_end: new Date(Date.now() + 3_600_000).toISOString(),
       status: 'scheduled',
-      ...(joinUrl ? { teams_join_url: joinUrl, provider: 'teams', sync_status: 'provisioned' } : {}),
     })
-    .eq('id', sessionId);
+    .eq('id', sessionId)
+    .eq('topic', E2E_TOPIC); // guard: a real class can never be moved by the suite
 }
 
-/** Put a session back where it was, restore its link, and clear any attendance the test created. */
-export async function restoreSession(sessionId: string, start: string, end: string, studentId?: string, joinUrl?: string | null) {
+/** Remove any override a test left behind, and the attendance it wrote. */
+export async function clearOverride(sessionId: string, studentId?: string) {
   const admin = adminClient();
   if (studentId) await admin.from('attendance').delete().eq('class_session_id', sessionId).eq('student_id', studentId);
-  await admin
-    .from('class_sessions')
-    .update({
-      scheduled_start: start,
-      scheduled_end: end,
-      status: 'scheduled',
-      ...(joinUrl ? { teams_join_url: joinUrl, provider: 'teams', sync_status: 'provisioned', join_url_override: null } : {}),
-    })
-    .eq('id', sessionId);
-}
-
-/** Remove any override a test left behind. */
-export async function clearOverride(sessionId: string) {
-  const admin = adminClient();
-  await admin.from('class_sessions').update({ join_url_override: null }).eq('id', sessionId);
+  await admin.from('class_sessions').update({ join_url_override: null }).eq('id', sessionId).eq('topic', E2E_TOPIC);
 }
 
 export async function signInStudent(page: Page, email: string, baseURL = 'http://localhost:3000') {

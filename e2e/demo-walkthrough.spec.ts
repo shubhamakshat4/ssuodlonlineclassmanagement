@@ -34,6 +34,13 @@ test('admin can reach every screen with data', async ({ page, baseURL }) => {
     await page.goto(`${baseURL}${path}`);
     await expect(page.locator('body'), path).toContainText(marker);
   }
+  // every student row offers an explicit Edit button, and the form exposes both class groups
+  await page.goto(`${baseURL}/admin/students`);
+  await expect(page.getByRole('columnheader', { name: 'Second group' })).toBeVisible();
+  await page.getByRole('link', { name: 'Edit' }).first().click();
+  await expect(page.locator('#batch_id')).toBeVisible();
+  await expect(page.locator('#secondary_batch_id')).toBeVisible();
+
   await page.goto(`${baseURL}/admin/attendance?batch=${f.groupId}&from=2026-09-01&to=2026-12-31`);
   await expect(page.getByText('Joined / total')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Download CSV' })).toBeVisible();

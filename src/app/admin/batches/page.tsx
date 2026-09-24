@@ -16,11 +16,15 @@ export default async function BatchesPage() {
   const [{ data: batches }, { data: programs }, { data: counts }] = await Promise.all([
     supabase.from('batches').select('*').order('intake_year', { ascending: false }).order('code'),
     supabase.from('programs').select('*').eq('is_active', true).order('code'),
-    supabase.from('students').select('batch_id'),
+    supabase.from('students').select('batch_id, secondary_batch_id'),
   ]);
   const programById = new Map((programs ?? []).map((p: Program) => [p.id, p]));
   const studentCount = new Map<string, number>();
-  for (const s of (counts ?? []) as { batch_id: string }[]) studentCount.set(s.batch_id, (studentCount.get(s.batch_id) ?? 0) + 1);
+  const secondaryCount = new Map<string, number>();
+  for (const s of (counts ?? []) as { batch_id: string; secondary_batch_id: string | null }[]) {
+    studentCount.set(s.batch_id, (studentCount.get(s.batch_id) ?? 0) + 1);
+    if (s.secondary_batch_id) secondaryCount.set(s.secondary_batch_id, (secondaryCount.get(s.secondary_batch_id) ?? 0) + 1);
+  }
 
   return (
     <>
@@ -50,7 +54,10 @@ export default async function BatchesPage() {
                     <TD>{programById.get(b.program_id)?.code ?? '—'}</TD>
                     <TD>{b.intake_year}</TD>
                     <TD>{b.current_semester}</TD>
-                    <TD>{studentCount.get(b.id) ?? 0}</TD>
+                    <TD className="whitespace-nowrap">
+                      {studentCount.get(b.id) ?? 0}
+                      {secondaryCount.get(b.id) ? <Badge variant="info" className="ml-2">{`+${secondaryCount.get(b.id)} second`}</Badge> : null}
+                    </TD>
                     <TD>
                       <Link href={`/admin/batches/${b.id}`} className="font-medium text-primary hover:underline">
                         Manage
