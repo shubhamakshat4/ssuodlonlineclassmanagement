@@ -43,3 +43,18 @@ Things that could not be finished in this build, what was tried, and exactly wha
   The dry run compares every session against `docs/ODL Sunday Online Timetable.xlsx` and reports
   anything off-Sunday or any date whose class count differs from the workbook. Worth running after any
   bulk edit.
+
+## B6 - The admin portal password was published in a public repository
+- **What:** `github.com/shubhamakshat4/ssuodlonlineclassmanagement` is publicly readable, and the repo
+  carried `AdminPass12345` for `odl.admin@srisriuniversity.edu.in` in `e2e/helpers.ts`,
+  `scripts/smoke-cloud.ts`, `README.md`, `docs/DEMO.md` and `supabase/seed.sql`. It was written as a
+  local/test password, but the live cloud project uses the same one, so it is a real credential.
+- **Done:** the suites now read `E2E_ADMIN_PASSWORD`, `E2E_TEACHER_PASSWORD` and
+  `E2E_SEED_TEACHER_PASSWORD` from `.env.local` (placeholders in `.env.local.example`); README and DEMO.md
+  no longer print the password.
+- **Needs (user):** change the admin account's password in Supabase - Authentication - Users, then update
+  `E2E_ADMIN_PASSWORD` in `.env.local` and anywhere it was shared (the email to the ODL team). Removing it
+  from the repository does not remove it from git history, so rotation is the fix. `supabase/seed.sql`
+  still contains it as the password its own local fixture creates; that is fine once the live account no
+  longer uses it.
+

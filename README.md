@@ -21,4 +21,5 @@ npm run demo:seed              # load demo data (never on production)
 npm run smoke:cloud            # live-stack checks with the anon key
 ```
 Local Supabase (needs Docker): `supabase start && supabase db reset` seeds fake data —
-admin `odl.admin@srisriuniversity.edu.in` / `AdminPass12345`, teachers `TeacherPass12345`.
+admin `odl.admin@srisriuniversity.edu.in`; passwords are not kept in this repository - set
+`E2E_ADMIN_PASSWORD` and `E2E_TEACHER_PASSWORD` in `.env.local` (see `.env.local.example`).

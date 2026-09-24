@@ -13,7 +13,7 @@ npm run dev       # http://localhost:3000   (or: npm run build && npx next start
 
 | Role | Email | Password |
 |---|---|---|
-| Admin | `odl.admin@srisriuniversity.edu.in` | `AdminPass12345` |
+| Admin | `odl.admin@srisriuniversity.edu.in` | see `E2E_ADMIN_PASSWORD` in `.env.local` |
 | Admin | `demo.admin@srisriuniversity.edu.in` | `DemoAdmin12345` |
 | Faculty | the 21 real faculty, e.g. `jharana.rani@srisriuniversity.edu.in` | **placeholder logins** — no password set until IT supplies real addresses (see `docs/BLOCKERS.md` B3) |
 | Student | their real `@srisriuniversity.edu.in` Google account | Google sign-in only, no password |

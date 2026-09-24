@@ -8,6 +8,12 @@ import { createClient } from '@supabase/supabase-js';
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+/** Portal passwords are not kept in this repository - they come from .env.local. */
+function requireEnv(name: string): string {
+  const v = process.env[name];
+  if (!v) throw new Error(`${name} is not set - add it to .env.local`);
+  return v;
+}
 let failures = 0;
 const check = (name: string, ok: boolean, detail = '') => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ' — ' + detail : ''}`);
@@ -28,7 +34,7 @@ async function main() {
   check('anon sees no sessions', !anonRows.error && (anonRows.data?.length ?? 0) === 0, anonRows.error?.message);
 
   // ---- admin ----------------------------------------------------------------
-  const admin = await signIn('odl.admin@srisriuniversity.edu.in', 'AdminPass12345');
+  const admin = await signIn(process.env.E2E_ADMIN_EMAIL ?? 'odl.admin@srisriuniversity.edu.in', requireEnv('E2E_ADMIN_PASSWORD'));
   const prof = await admin.c.from('profiles').select('role').eq('id', admin.user.id).single();
   check('admin password login + profile', prof.data?.role === 'admin', prof.error?.message);
   const students = await admin.c.from('students').select('*, profiles!inner(full_name, email, is_active)').order('roll_number');
@@ -45,7 +51,7 @@ async function main() {
   check('log_audit rpc', !auditRpc.error, auditRpc.error?.message);
 
   // ---- teacher --------------------------------------------------------------
-  const teacher = await signIn('anand.mishra@srisriuniversity.edu.in', 'TeacherPass12345');
+  const teacher = await signIn('anand.mishra@srisriuniversity.edu.in', requireEnv('E2E_SEED_TEACHER_PASSWORD'));
   const mine = await teacher.c.from('v_class_sessions').select('id, teacher_id').limit(50);
   check('teacher sees only own sessions', !mine.error && (mine.data?.length ?? 0) > 0 && mine.data!.every((s) => s.teacher_id === teacher.user.id), mine.error?.message);
   const target = (await teacher.c.from('v_class_sessions').select('id').eq('teacher_id', teacher.user.id).eq('status', 'scheduled').gt('scheduled_end', new Date().toISOString()).order('scheduled_start').limit(1)).data?.[0];
@@ -63,7 +69,7 @@ async function main() {
   check('teacher roster (batches taught only)', !roster.error && (roster.data?.length ?? 0) > 0 && (roster.data?.length ?? 0) < 17, roster.error?.message ?? `${roster.data?.length} rows`);
 
   // ---- student (magic link needs the service key; use the DB-level checks instead) -----------
-  const other = await signIn('kavita.sen@srisriuniversity.edu.in', 'TeacherPass12345');
+  const other = await signIn('kavita.sen@srisriuniversity.edu.in', requireEnv('E2E_SEED_TEACHER_PASSWORD'));
   const notMine = await other.c.from('v_class_sessions').select('id').eq('id', target!.id);
   check('colleague cannot see the session', !notMine.error && notMine.data?.length === 0, notMine.error?.message);
 

@@ -20,9 +20,19 @@ dotenvConfig({ path: '.env.local' });
 import { createClient } from '@supabase/supabase-js';
 import type { Page } from '@playwright/test';
 
-export const ADMIN = { email: 'odl.admin@srisriuniversity.edu.in', password: 'AdminPass12345' };
+/** Credentials come from .env.local: this repository is public, so no portal password lives in it. */
+function required(name: string, what: string): string {
+  const v = process.env[name];
+  if (!v) throw new Error(`${name} is not set - add it to .env.local (${what})`);
+  return v;
+}
+
+export const ADMIN = {
+  email: process.env.E2E_ADMIN_EMAIL ?? 'odl.admin@srisriuniversity.edu.in',
+  password: required('E2E_ADMIN_PASSWORD', 'the admin portal password'),
+};
 /** Password we set on the picked faculty account so the teacher journey can sign in. */
-export const TEACHER_TEST_PASSWORD = 'FacultyTest12345';
+export const TEACHER_TEST_PASSWORD = required('E2E_TEACHER_PASSWORD', 'any password the suite may set on a test faculty account');
 /** Topic stamped on sessions the suite creates, so a stray one is recognisable and sweepable. */
 export const E2E_TOPIC = 'E2E test class (safe to delete)';
 
