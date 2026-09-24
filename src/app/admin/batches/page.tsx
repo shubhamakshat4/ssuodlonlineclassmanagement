@@ -24,7 +24,7 @@ export default async function BatchesPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Administration" title="Batches" description="An intake cohort of a programme. Students belong to exactly one batch." />
+      <PageHeader eyebrow="Administration" title="Class groups" description="A programme and semester that shares a timetable, e.g. BBA - Semester 1. Students follow one group, and may follow a second one (a semester they are catching up on)." />
       <div className="grid gap-6">
         <Card>
           <CardContent className="pt-5">
@@ -64,10 +64,10 @@ export default async function BatchesPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>New batch</CardTitle>
+            <CardTitle>New class group</CardTitle>
           </CardHeader>
           <CardContent>
-            <ActionForm action={createBatch} submitLabel="Create batch" resetOnSuccess>
+            <ActionForm action={createBatch} submitLabel="Create class group" resetOnSuccess>
               <BatchFields programs={(programs ?? []) as Program[]} />
             </ActionForm>
           </CardContent>

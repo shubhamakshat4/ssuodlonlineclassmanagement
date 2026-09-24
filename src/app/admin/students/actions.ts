@@ -29,6 +29,7 @@ export const createStudent = formAction({ roles: ['admin'], schema: createSchema
 
 const updateSchema = z.object({
   id: z.string().uuid(),
+  secondary_batch_id: z.string().uuid().optional(),
   full_name: z.string().min(2),
   email: z.string().email().transform((s) => s.toLowerCase()),
   phone: z.string().optional(),
@@ -54,13 +55,20 @@ export const updateStudent = formAction(
         .select('id')
         .single(),
     );
-    must(await supabase.from('students').update({ roll_number: input.roll_number, batch_id: input.batch_id, status: input.status }).eq('id', input.id).select('id').single());
+    must(
+      await supabase
+        .from('students')
+        .update({ roll_number: input.roll_number, batch_id: input.batch_id, secondary_batch_id: input.secondary_batch_id ?? null, status: input.status })
+        .eq('id', input.id)
+        .select('id')
+        .single(),
+    );
     await audit(supabase, 'student.updated', 'students', input.id, { ...input });
     return { message: 'Saved.' };
   },
 );
 
-const mapSchema = z.object({ id: z.string().uuid(), roll_number: z.string().min(2).transform((s) => s.toUpperCase()), batch_id: z.string().uuid(), status: STATUS.default('active') });
+const mapSchema = z.object({ id: z.string().uuid(), roll_number: z.string().min(2).transform((s) => s.toUpperCase()), batch_id: z.string().uuid(), secondary_batch_id: z.string().uuid().optional(), status: STATUS.default('active') });
 
 /** Map a self-registered (Google) student profile to a batch + roll number. */
 export const mapStudent = formAction(
@@ -70,7 +78,13 @@ export const mapStudent = formAction(
     revalidate: ['/admin/students', '/admin', '/student'],
   },
   async (input, { supabase }) => {
-    must(await supabase.from('students').insert({ id: input.id, roll_number: input.roll_number, batch_id: input.batch_id, status: input.status }).select('id').single());
+    must(
+      await supabase
+        .from('students')
+        .insert({ id: input.id, roll_number: input.roll_number, batch_id: input.batch_id, secondary_batch_id: input.secondary_batch_id ?? null, status: input.status })
+        .select('id')
+        .single(),
+    );
     await audit(supabase, 'student.mapped', 'students', input.id, { roll_number: input.roll_number, batch_id: input.batch_id });
     return { message: 'Student mapped to the batch. Their timetable is visible on next refresh.' };
   },

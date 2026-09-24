@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { ExternalLink, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { formatCountdown, joinWindow } from '@shared/sessions.ts';
+import { joinWindow } from '@shared/sessions.ts';
+import { formatIstTime } from '@/lib/domain/time';
 
 interface Props {
   sessionId: string;
@@ -18,12 +19,14 @@ interface Props {
 }
 
 /**
- * Join Now. Enabled only inside the join window (mirrors the DB trigger). On click it opens a tab
- * first (popup-blocker friendly), calls POST /api/sessions/{id}/join, then navigates that tab.
+ * Join Now. The button stays available at all times so students always know where to click; when the
+ * class has not opened yet, pressing it explains when it will (the server enforces the window either
+ * way — see the attendance trigger). Ended and cancelled classes are the only disabled states.
  */
 export function JoinButton({ sessionId, scheduledStart, scheduledEnd, status, leadMinutes, hasUrl, joined, label }: Props) {
   const [now, setNow] = useState<Date | null>(null);
   const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(Boolean(joined));
 
@@ -33,11 +36,26 @@ export function JoinButton({ sessionId, scheduledStart, scheduledEnd, status, le
     return () => clearInterval(t);
   }, []);
 
-  if (!now) return <Button disabled className="min-w-32">Join Now</Button>;
+  if (!now) {
+    return (
+      <Button variant="accent" className="min-w-32" disabled>
+        <Video className="h-4 w-4" aria-hidden />
+        Join Now
+      </Button>
+    );
+  }
+
   const w = joinWindow(now, scheduledStart, scheduledEnd, leadMinutes, status);
 
   async function join() {
+    // Not open yet: say when, rather than silently doing nothing.
+    if (w.state === 'before') {
+      setError(null);
+      setNote(`This class starts at ${formatIstTime(scheduledStart)}. You can join from ${formatIstTime(w.opensAt.toISOString())} — ${leadMinutes} minutes before the scheduled time.`);
+      return;
+    }
     setBusy(true);
+    setNote(null);
     setError(null);
     const tab = window.open('', '_blank');
     try {
@@ -59,23 +77,42 @@ export function JoinButton({ sessionId, scheduledStart, scheduledEnd, status, le
     }
   }
 
-  if (w.state === 'cancelled') return <Button disabled variant="secondary" className="min-w-32">{status === 'completed' ? 'Ended' : 'Cancelled'}</Button>;
-  if (w.state === 'ended') return <Button disabled variant="secondary" className="min-w-32">Class over</Button>;
-  if (w.state === 'before') {
+  if (w.state === 'cancelled') {
     return (
-      <Button disabled variant="outline" className="min-w-32 font-mono text-xs" title={`Opens ${leadMinutes} minutes before the class`}>
-        Opens in {formatCountdown(w.opensInMs)}
+      <Button disabled variant="secondary" className="min-w-32">
+        {status === 'completed' ? 'Ended' : 'Cancelled'}
       </Button>
     );
   }
+  if (w.state === 'ended') {
+    return (
+      <Button disabled variant="secondary" className="min-w-32">
+        Class over
+      </Button>
+    );
+  }
+
+  const open = w.state === 'open';
   return (
     <div className="flex flex-col items-end gap-1">
-      <Button onClick={join} disabled={busy || !hasUrl} variant="accent" className="min-w-32" data-testid={`join-${sessionId}`} title={hasUrl ? undefined : 'Meeting link not ready yet'}>
+      <Button
+        onClick={join}
+        disabled={busy || (open && !hasUrl)}
+        variant={open ? 'accent' : 'outline'}
+        className="min-w-32"
+        data-testid={`join-${sessionId}`}
+        title={open ? undefined : `Opens ${leadMinutes} minutes before the class`}
+      >
         {done ? <ExternalLink className="h-4 w-4" aria-hidden /> : <Video className="h-4 w-4" aria-hidden />}
         {busy ? 'Opening…' : done ? (label ?? 'Rejoin') : (label ?? 'Join Now')}
       </Button>
-      {!hasUrl ? <span className="text-xs text-muted-foreground">Link not ready yet</span> : null}
-      {error ? <span className="max-w-56 text-right text-xs text-destructive">{error}</span> : null}
+      {open && !hasUrl ? <span className="text-xs text-muted-foreground">Link not ready yet</span> : null}
+      {note ? (
+        <span className="max-w-64 text-right text-xs text-muted-foreground" data-testid="join-note">
+          {note}
+        </span>
+      ) : null}
+      {error ? <span className="max-w-64 text-right text-xs text-destructive">{error}</span> : null}
     </div>
   );
 }

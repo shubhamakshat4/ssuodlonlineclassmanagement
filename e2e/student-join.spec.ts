@@ -1,53 +1,61 @@
 import { expect, test } from '@playwright/test';
-import { adminClient, resetLiveSession, SEED, signInStudent } from './helpers';
+import { adminClient, clearOverride, loadFixture, makeLive, restoreSession, signInStudent, type Fixture } from './helpers';
 
 /**
  * Journey 1 (SPEC §14): student signs in → sees today's class → clicks Join → attendance row exists.
+ * Runs against whatever data is loaded (demo seed or the live ODL timetable).
  */
-test.describe('student join journey', () => {
-  test.beforeEach(async () => {
-    await resetLiveSession();
-  });
+test.describe.configure({ mode: 'serial' });
 
-  test('student sees the live class, joins, and an attendance row is written', async ({ page, context, baseURL }) => {
-    await signInStudent(page, SEED.studentEmail, baseURL);
-    await expect(page.getByRole('heading', { name: /Hello, Aarav/ })).toBeVisible();
+let f: Fixture;
 
-    const card = page.getByTestId(`session-${SEED.liveSessionId}`);
-    await expect(card).toBeVisible();
-    await expect(card).toContainText('Financial Management');
-    await expect(card).toContainText('Dr. Anand Mishra');
+test.beforeAll(async () => {
+  f = await loadFixture();
+});
+test.afterAll(async () => {
+  await restoreSession(f.sessionId, f.originalStart, f.originalEnd, f.studentId, f.originalJoinUrl);
+  await clearOverride(f.sessionId);
+});
 
-    const popupPromise = context.waitForEvent('page');
-    await card.getByTestId(`join-${SEED.liveSessionId}`).click();
-    const popup = await popupPromise;
-    await popup.waitForURL((u) => u.hostname.includes('teams.microsoft.com'), { waitUntil: 'commit', timeout: 20_000 });
-    await popup.close();
+test('student sees the live class, joins, and an attendance row is written', async ({ page, context, baseURL }) => {
+  await makeLive(f.sessionId, f.originalJoinUrl);
+  await signInStudent(page, f.studentEmail, baseURL);
 
-    const admin = adminClient();
-    const { data } = await admin.from('attendance').select('student_id, ip, user_agent, clicked_at').eq('class_session_id', SEED.liveSessionId).eq('student_id', SEED.studentId).maybeSingle();
-    expect(data).not.toBeNull();
-    expect(data?.user_agent).toBeTruthy();
+  const card = page.getByTestId(`session-${f.sessionId}`);
+  await expect(card).toBeVisible();
 
-    // a second click does not duplicate
-    const againPromise = context.waitForEvent('page');
-    await card.getByTestId(`join-${SEED.liveSessionId}`).click();
-    const again = await againPromise;
-    await again.close();
-    const { count } = await admin.from('attendance').select('id', { count: 'exact', head: true }).eq('class_session_id', SEED.liveSessionId).eq('student_id', SEED.studentId);
-    expect(count).toBe(1);
-  });
+  const popupPromise = context.waitForEvent('page');
+  await card.getByTestId(`join-${f.sessionId}`).click();
+  const popup = await popupPromise;
+  await popup.waitForURL((u) => u.hostname.includes('teams.microsoft.com') || u.hostname.includes('meet.google.com') || u.hostname.includes('zoom'), { waitUntil: 'commit', timeout: 25_000 });
+  await popup.close();
 
-  test('Join is disabled outside the window', async ({ page, baseURL }) => {
-    await signInStudent(page, SEED.studentEmail, baseURL);
-    const later = page.getByTestId(`session-${SEED.laterSessionId}`);
-    await expect(later).toBeVisible();
-    await expect(later.getByRole('button')).toBeDisabled();
-    await expect(later.getByRole('button')).toContainText(/Opens in/);
-  });
+  const admin = adminClient();
+  const { data } = await admin.from('attendance').select('student_id, user_agent').eq('class_session_id', f.sessionId).eq('student_id', f.studentId).maybeSingle();
+  expect(data).not.toBeNull();
+  expect(data?.user_agent).toBeTruthy();
 
-  test('a student from another batch cannot see the class', async ({ page, baseURL }) => {
-    await signInStudent(page, 'kabir.malhotra.odl25@srisriuniversity.edu.in', baseURL);
-    await expect(page.getByTestId(`session-${SEED.liveSessionId}`)).toHaveCount(0);
-  });
+  // a second click does not duplicate
+  const againPromise = context.waitForEvent('page');
+  await card.getByTestId(`join-${f.sessionId}`).click();
+  const again = await againPromise;
+  await again.close();
+  const { count } = await admin.from('attendance').select('id', { count: 'exact', head: true }).eq('class_session_id', f.sessionId).eq('student_id', f.studentId);
+  expect(count).toBe(1);
+});
+
+test('Join stays available before the window and explains when it opens', async ({ page, baseURL }) => {
+  await restoreSession(f.sessionId, f.originalStart, f.originalEnd, f.studentId, f.originalJoinUrl);
+  await signInStudent(page, f.studentEmail, baseURL);
+  const later = page.getByTestId(`session-${f.laterSessionId}`).or(page.getByTestId(`session-${f.sessionId}`)).first();
+  const button = later.getByRole('button').first();
+  await expect(button).toBeEnabled();
+  await expect(button).toContainText(/Join Now/i);
+  await button.click();
+  await expect(page.getByTestId('join-note').first()).toContainText(/minutes before the scheduled time/i);
+});
+
+test('a student from another class group cannot see the class', async ({ page, baseURL }) => {
+  await signInStudent(page, f.otherStudentEmail, baseURL);
+  await expect(page.getByTestId(`session-${f.sessionId}`)).toHaveCount(0);
 });

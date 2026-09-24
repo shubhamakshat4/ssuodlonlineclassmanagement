@@ -14,17 +14,36 @@ export const maxDuration = 60;
 
 type Row = Student & { profiles: { full_name: string; email: string; phone: string | null; is_active: boolean } };
 
-export default async function StudentsPage({ searchParams }: { searchParams: Promise<{ batch?: string; q?: string }> }) {
-  const { batch, q } = await searchParams;
+const PAGE_SIZE = 50;
+
+export default async function StudentsPage({ searchParams }: { searchParams: Promise<{ batch?: string; q?: string; page?: string }> }) {
+  const { batch, q, page } = await searchParams;
   const supabase = await createClient();
-  let query = supabase.from('students').select('*, profiles!inner(full_name, email, phone, is_active)').order('roll_number');
+  const pageNo = Math.max(1, Number.parseInt(page ?? '1', 10) || 1);
+  const from = (pageNo - 1) * PAGE_SIZE;
+
+  // Cohorts run to several hundred students, so the list is paged; filters narrow it first.
+  let query = supabase
+    .from('students')
+    .select('*, profiles!inner(full_name, email, phone, is_active)', { count: 'exact' })
+    .order('roll_number')
+    .range(from, from + PAGE_SIZE - 1);
   if (batch) query = query.eq('batch_id', batch);
   if (q) query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`, { referencedTable: 'profiles' });
-  const [{ data: students }, { data: batches }, { data: unmappedData }] = await Promise.all([
+  const [{ data: students, count }, { data: batches }, { data: unmappedData }] = await Promise.all([
     query,
     supabase.from('batches').select('*').order('code'),
-    supabase.from('v_unmapped_students').select('*'),
+    supabase.from('v_unmapped_students').select('*').limit(50),
   ]);
+  const total = count ?? 0;
+  const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const qs = (n: number) => {
+    const p = new URLSearchParams();
+    if (batch) p.set('batch', batch);
+    if (q) p.set('q', q);
+    if (n > 1) p.set('page', String(n));
+    return p.toString() ? `?${p.toString()}` : '';
+  };
   const unmapped = (unmappedData ?? []) as { id: string; full_name: string; email: string; created_at: string }[];
   const batchList = (batches ?? []) as Batch[];
   const batchById = new Map(batchList.map((b) => [b.id, b]));
@@ -32,14 +51,14 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <PageHeader eyebrow="Administration" title="Students" description={`Any @${appConfig.allowedStudentDomain} Google account can sign in; a student only sees classes once mapped to a batch here.`} />
+      <PageHeader eyebrow="Administration" title="Students" description={`Any @${appConfig.allowedStudentDomain} Google account can sign in; a student only sees classes once mapped to a class group here.`} />
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="grid gap-6">
           {unmapped.length ? (
             <Card className="border-amber-300">
               <CardHeader>
                 <CardTitle>Signed in but not mapped ({unmapped.length})</CardTitle>
-                <CardDescription>These students signed in with Google but have no batch yet. They currently see “No classes are assigned to you yet — contact the ODL department”.</CardDescription>
+                <CardDescription>These students signed in with Google but have no class group yet. They currently see “No classes are assigned to you yet — contact the ODL department”.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3">
                 {unmapped.map((u) => (
@@ -51,9 +70,9 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
                     <ActionForm action={mapStudent} inline submitLabel="Map to batch" className="flex-wrap">
                       <input type="hidden" name="id" value={u.id} />
                       <Input name="roll_number" placeholder="Roll number" required className="w-40 font-mono uppercase" aria-label="Roll number" />
-                      <Select name="batch_id" required defaultValue="" className="w-48" aria-label="Batch">
+                      <Select name="batch_id" required defaultValue="" className="w-48" aria-label="Class group">
                         <option value="" disabled>
-                          Batch…
+                          Class group…
                         </option>
                         {batchList.map((b) => (
                           <option key={b.id} value={b.id}>
@@ -70,9 +89,9 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
           <Card>
             <CardContent className="pt-5">
               <form className="mb-4 flex flex-wrap items-end gap-2" method="get">
-                <Field label="Batch" htmlFor="batch">
+                <Field label="Class group" htmlFor="batch">
                   <Select id="batch" name="batch" defaultValue={batch ?? ''} className="w-56">
-                    <option value="">All batches</option>
+                    <option value="">All class groups</option>
                     {batchList.map((b) => (
                       <option key={b.id} value={b.id}>
                         {b.code}
@@ -93,7 +112,7 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
                     <TH>Roll no.</TH>
                     <TH>Name</TH>
                     <TH>Email</TH>
-                    <TH>Batch</TH>
+                    <TH>Class group</TH>
                     <TH>Status</TH>
                   </TR>
                 </THead>
@@ -127,7 +146,28 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
                   ) : null}
                 </TBody>
               </Table>
-              <p className="mt-3 text-xs text-muted-foreground">{rows.length} student(s)</p>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span>
+                  {total === 0 ? 'No students match.' : `Showing ${from + 1}–${Math.min(from + PAGE_SIZE, total)} of ${total} student(s)`}
+                </span>
+                {lastPage > 1 ? (
+                  <span className="flex items-center gap-3">
+                    {pageNo > 1 ? (
+                      <Link href={`/admin/students${qs(pageNo - 1)}`} className="font-medium text-primary hover:underline">
+                        ← Previous
+                      </Link>
+                    ) : null}
+                    <span>
+                      Page {pageNo} of {lastPage}
+                    </span>
+                    {pageNo < lastPage ? (
+                      <Link href={`/admin/students${qs(pageNo + 1)}`} className="font-medium text-primary hover:underline">
+                        Next →
+                      </Link>
+                    ) : null}
+                  </span>
+                ) : null}
+              </div>
             </CardContent>
           </Card>
 
@@ -153,7 +193,7 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
               <Field label="Roll number" htmlFor="roll_number">
                 <Input id="roll_number" name="roll_number" required className="font-mono uppercase" />
               </Field>
-              <Field label="Batch" htmlFor="batch_id">
+              <Field label="Class group" htmlFor="batch_id">
                 <Select id="batch_id" name="batch_id" required defaultValue="">
                   <option value="" disabled>
                     Select…

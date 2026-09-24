@@ -1,10 +1,9 @@
 /** Diagnose the tenant setup: licences, calendar event shape, direct onlineMeetings access. */
 import './_env';
-import { createGraphClient, type GraphEnv } from '../supabase/functions/_shared/graph/index.ts';
+import type { GraphEnv } from '../supabase/functions/_shared/graph/index.ts';
 
 const env = process.env as GraphEnv & NodeJS.ProcessEnv;
 const SA = env.MS_SERVICE_ACCOUNT_USER_ID!;
-const g = createGraphClient(env) as unknown as { ['call']: unknown };
 
 async function token() {
   const r = await fetch(`https://login.microsoftonline.com/${env.MS_TENANT_ID}/oauth2/v2.0/token`, {

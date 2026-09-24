@@ -40,3 +40,9 @@ supabase/.branches/
 *.swp
 .vercel
 _shots/
+
+# Source spreadsheets contain real student personal data (names, personal emails, phone numbers).
+# Keep them local; never push them to a shared repository.
+docs/*.xlsx
+docs/*.xls
+docs/*.csv

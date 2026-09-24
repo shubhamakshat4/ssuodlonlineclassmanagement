@@ -51,13 +51,25 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               <Field label="Roll number" htmlFor="roll_number">
                 <Input id="roll_number" name="roll_number" defaultValue={s.roll_number} required className="font-mono" />
               </Field>
-              <Field label="Batch" htmlFor="batch_id">
+              <Field label="Primary class group" htmlFor="batch_id" hint="Programme + semester whose timetable the student follows.">
                 <Select id="batch_id" name="batch_id" defaultValue={s.batch_id} required>
                   {((batches ?? []) as Batch[]).map((b) => (
                     <option key={b.id} value={b.id}>
-                      {b.code}
+                      {b.code} — {b.name}
                     </option>
                   ))}
+                </Select>
+              </Field>
+              <Field label="Second class group (optional)" htmlFor="secondary_batch_id" hint="Use when the student also attends another semester, e.g. one they missed.">
+                <Select id="secondary_batch_id" name="secondary_batch_id" defaultValue={s.secondary_batch_id ?? ''}>
+                  <option value="">— none —</option>
+                  {((batches ?? []) as Batch[])
+                    .filter((b) => b.id !== s.batch_id)
+                    .map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.code} — {b.name}
+                      </option>
+                    ))}
                 </Select>
               </Field>
               <Field label="Enrolment status" htmlFor="status" hint="Only active students see classes and recordings.">

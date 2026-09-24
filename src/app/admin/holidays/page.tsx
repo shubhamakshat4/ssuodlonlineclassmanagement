@@ -20,7 +20,7 @@ export default async function HolidaysPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Administration" title="Holidays" description="No sessions are generated on a holiday. A holiday without a batch applies to everyone." />
+      <PageHeader eyebrow="Administration" title="Holidays" description="No sessions are generated on a holiday. A holiday without a class group applies to everyone." />
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <Card>
           <CardContent className="pt-5">
@@ -70,9 +70,9 @@ export default async function HolidaysPage() {
               <Field label="Name" htmlFor="name">
                 <Input id="name" name="name" required />
               </Field>
-              <Field label="Batch (optional)" htmlFor="batch_id">
+              <Field label="Class group (optional)" htmlFor="batch_id">
                 <Select id="batch_id" name="batch_id" defaultValue="">
-                  <option value="">All batches</option>
+                  <option value="">All class groups</option>
                   {((batches ?? []) as Batch[]).map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.code}

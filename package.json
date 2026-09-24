@@ -19,7 +19,8 @@
     "db:ping": "tsx scripts/db-ping.ts",
     "demo:seed": "tsx scripts/demo-seed.ts",
     "demo:reset-links": "tsx scripts/demo-seed.ts --reset-links",
-    "smoke:cloud": "tsx scripts/smoke-cloud.ts"
+    "smoke:cloud": "tsx scripts/smoke-cloud.ts",
+    "data:import": "tsx scripts/import-real-data.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
@@ -50,6 +51,7 @@
     "tailwindcss": "^4",
     "tsx": "^4.19.3",
     "typescript": "^5",
-    "vitest": "^3.0.7"
+    "vitest": "^3.0.7",
+    "xlsx": "^0.18.5"
   }
 }

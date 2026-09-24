@@ -59,7 +59,6 @@ export function SessionCard({
             </Badge>
           ) : null}
           {s.provider === 'custom' && s.status === 'scheduled' ? <Badge variant="secondary">No recording</Badge> : null}
-          {s.timetable_slot_id ? null : <Badge variant="info">Extra class</Badge>}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">

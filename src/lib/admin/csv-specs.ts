@@ -260,13 +260,14 @@ export const holidaysSpec: CsvSpec<{ date: string; name: string; batch_code?: st
   ],
 };
 
-export const studentsSpec: CsvSpec<{ roll_number: string; full_name: string; email: string; phone?: string; batch_code: string; status: 'active' | 'on_hold' | 'withdrawn' | 'graduated' }> = {
+export const studentsSpec: CsvSpec<{ roll_number: string; full_name: string; email: string; phone?: string; batch_code: string; secondary_batch_code?: string; status: 'active' | 'on_hold' | 'withdrawn' | 'graduated' }> = {
   key: 'students',
   title: 'Students',
   summary: 'Creates student records mapped to a batch. Students then sign in with Google.',
   notes: [
     'email must be @srisriuniversity.edu.in; students never get a password.',
-    'A row whose email already exists but is not yet mapped to a batch is mapped (roll number + batch); a fully mapped student is skipped.',
+    'A row whose email already exists but is not yet mapped is mapped (roll number + group); a fully mapped student is skipped.',
+    'secondary_batch_code is for a student who also attends another semester (e.g. repeating a missed one). Leave it empty otherwise.',
     'status: active, on_hold, withdrawn, graduated (default active).',
   ],
   matchOn: 'email',
@@ -275,7 +276,8 @@ export const studentsSpec: CsvSpec<{ roll_number: string; full_name: string; ema
     { name: 'full_name', required: true, description: 'Student name' },
     { name: 'email', required: true, description: 'University Google account' },
     { name: 'phone', required: false, description: 'Free text' },
-    { name: 'batch_code', required: true, description: 'Batch code' },
+    { name: 'batch_code', required: true, description: 'Primary class group, e.g. BBA-S1 (programme + semester)' },
+    { name: 'secondary_batch_code', required: false, description: 'Optional second class group the student also attends, e.g. a back semester' },
     { name: 'status', required: false, description: 'active / on_hold / withdrawn / graduated' },
   ],
   schema: z.object({
@@ -284,11 +286,12 @@ export const studentsSpec: CsvSpec<{ roll_number: string; full_name: string; ema
     email: EMAIL,
     phone: OPT(z.string().trim()),
     batch_code: CODE(30),
+    secondary_batch_code: OPT(CODE(30)),
     status: OPT(z.enum(['active', 'on_hold', 'withdrawn', 'graduated'])).transform((v) => v ?? 'active'),
   }),
   sampleRows: [
-    ['ODL26BBA010', 'Nikhil Rao', 'nikhil.rao.odl26@srisriuniversity.edu.in', '+91 98000 00010', 'BBA-ODL-2026', 'active'],
-    ['ODL26BBA011', 'Priya Menon', 'priya.menon.odl26@srisriuniversity.edu.in', '', 'BBA-ODL-2026', 'active'],
+    ['ODL26BBA010', 'Nikhil Rao', 'nikhil.rao.odl26@srisriuniversity.edu.in', '+91 98000 00010', 'BBA-S1', '', 'active'],
+    ['ODL26BBA011', 'Priya Menon', 'priya.menon.odl26@srisriuniversity.edu.in', '', 'BBA-S2', 'BBA-S1', 'active'],
   ],
 };
 

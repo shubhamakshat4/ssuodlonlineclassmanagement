@@ -1,4 +1,8 @@
 -- Seed: realistic but entirely invented data. No real student or staff records.
+--
+-- NOTE: a `batches` row is a CLASS GROUP = programme + semester (e.g. BBA-S3), which is how the
+-- real timetable is organised. Students follow one group and may follow a second one
+-- (students.secondary_batch_id), e.g. a semester they missed.
 -- Applied by `supabase db reset` and by the test harness. Idempotent on a fresh database only.
 --
 -- Fixed UUID scheme (also mirrored in tests/db/fixtures.ts):
@@ -82,9 +86,9 @@ insert into public.programs (id, name, code) values
   ('d0000000-0000-4000-8000-000000000002', 'Master of Business Administration (ODL)',   'MBA-ODL');
 
 insert into public.batches (id, program_id, name, code, intake_year, current_semester, start_date, end_date) values
-  ('e0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000001', 'BBA ODL 2025 intake', 'BBA-ODL-2025', 2025, 3, '2025-07-01', '2028-06-30'),
-  ('e0000000-0000-4000-8000-000000000002', 'd0000000-0000-4000-8000-000000000002', 'MBA ODL 2025 intake', 'MBA-ODL-2025', 2025, 3, '2025-07-01', '2027-06-30'),
-  ('e0000000-0000-4000-8000-000000000003', 'd0000000-0000-4000-8000-000000000001', 'BBA ODL 2026 intake', 'BBA-ODL-2026', 2026, 1, '2026-07-01', '2029-06-30');
+  ('e0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000001', 'BBA - Semester 3', 'BBA-ODL-2025', 2025, 3, '2025-07-01', '2028-06-30'),
+  ('e0000000-0000-4000-8000-000000000002', 'd0000000-0000-4000-8000-000000000002', 'MBA - Semester 3', 'MBA-ODL-2025', 2025, 3, '2025-07-01', '2027-06-30'),
+  ('e0000000-0000-4000-8000-000000000003', 'd0000000-0000-4000-8000-000000000001', 'BBA - Semester 1', 'BBA-ODL-2026', 2026, 1, '2026-07-01', '2029-06-30');
 
 insert into public.subjects (id, program_id, code, name, credits) values
   ('f0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000001', 'BBA301', 'Financial Management',     4),

@@ -66,7 +66,7 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
         <Card>
           <CardContent className="pt-5">
             <form method="get" className="mb-4 flex flex-wrap items-end gap-2">
-              <Field label="Batch" htmlFor="batch">
+              <Field label="Class group" htmlFor="batch">
                 <Select id="batch" name="batch" defaultValue={p.batch ?? ''} className="w-48">
                   <option value="">All</option>
                   {batchList.map((b) => (

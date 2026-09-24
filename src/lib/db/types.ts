@@ -56,8 +56,30 @@ export interface BatchSubject {
 export interface Student {
   id: string;
   roll_number: string;
+  /** primary class group (programme + semester) */
   batch_id: string;
+  /** optional second class group, e.g. a back semester being repeated */
+  secondary_batch_id: string | null;
   status: StudentStatus;
+  enrollment_no: string | null;
+  intake_session: string | null;
+  personal_email: string | null;
+}
+
+/** public.v_class_groups */
+export interface ClassGroupView {
+  id: string;
+  code: string;
+  name: string;
+  program_id: string;
+  program_code: string;
+  program_name: string;
+  semester: number;
+  is_active: boolean;
+  primary_students: number;
+  secondary_students: number;
+  subjects: number;
+  upcoming_sessions: number;
 }
 
 export interface Teacher {

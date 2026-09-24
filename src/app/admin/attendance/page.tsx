@@ -39,10 +39,10 @@ export default async function AttendanceReportPage({ searchParams }: { searchPar
       <Card className="mb-6">
         <CardContent className="pt-5">
           <form method="get" className="flex flex-wrap items-end gap-2">
-            <Field label="Batch" htmlFor="batch">
+            <Field label="Class group" htmlFor="batch">
               <Select id="batch" name="batch" defaultValue={p.batch ?? ''} className="w-52" required>
                 <option value="" disabled>
-                  Select batch…
+                  Select class group…
                 </option>
                 {batchList.map((b) => (
                   <option key={b.id} value={b.id}>
@@ -72,7 +72,7 @@ export default async function AttendanceReportPage({ searchParams }: { searchPar
         </CardContent>
       </Card>
 
-      {!report ? <EmptyState>Choose a batch and run the report.</EmptyState> : null}
+      {!report ? <EmptyState>Choose a class group and run the report.</EmptyState> : null}
       {report && report.sessions.length === 0 ? <Alert>No classes for this selection between {from} and {to}.</Alert> : null}
       {report && report.sessions.length > 0 ? (
         <Card>

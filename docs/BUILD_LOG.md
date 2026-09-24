@@ -235,3 +235,25 @@ One entry per phase. Newest at the bottom.
 - Live: `MS_*` + `GRAPH_MODE=real` set as Supabase secrets, functions redeployed, `demo:reset-links` run, and
   the provisioner executed through the deployed Edge Function — all 33 upcoming sessions now carry real Teams
   meeting links (`path=meeting-first` in the audit log).
+
+## Real data + class groups (24 Sep 2026)
+- **Model**: migration `…20260924000100_program_semester_groups.sql` — `batches` becomes a class group
+  (programme + semester); `students.secondary_batch_id` adds an optional second group, with
+  `current_student_batch_ids()` and every dependent policy/helper updated; `students.enrollment_no`,
+  `intake_session`, `personal_email`; `v_class_groups` for admin counts; a check stops a group being its
+  own secondary.
+- **Import**: `scripts/import-real-data.ts` (`npm run data:import`, `-- --apply`) reads the 10 workbooks in
+  `docs/`, derives programmes/groups/subjects/faculty/classes and students, and loads them. Dry run prints a
+  full reconciliation; 38 skipped rows were verified to be section headers and gender tallies, not students.
+- **Loaded**: 6 programmes, 20 class groups, 98 subjects, 98 offerings, 21 faculty (placeholder logins),
+  331 dated classes (16 Sundays, 13 Sep – 27 Dec 2026), 637 students. All 294 upcoming classes carry real
+  Teams links created by the deployed provisioner.
+- **UI**: student Timetable page (both semesters, weekly pattern, full term) + nav entry; dashboard shows
+  both groups and 14 days ahead; Join Now is never greyed out and explains the 15-minute rule when pressed
+  early; admin student page and CSV import gained the second class group; "batch" wording became
+  "class group"; admin Students list paged (50/page, was 7.6 s for 637 rows).
+- **Tested**: 159 unit + RLS tests (7 new in `tests/db/secondary-group.test.ts`); Playwright rewritten to be
+  data-agnostic (fixtures resolved from the database) — 9/9 green against the live data; a 23-check
+  real-data sweep of all three roles passed, including a real Teams join that wrote an attendance row.
+- **Not done**: faculty real emails / M365 UPNs (awaiting the list); B.Com semesters 2 and 4 have students
+  but no classes in the source timetable, so those two students see an empty schedule.

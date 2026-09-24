@@ -219,6 +219,13 @@ export async function runCsvImport(supabase: Supabase, key: EntityKey, text: str
           if (r.email.split('@')[1] !== appConfig.allowedStudentDomain.toLowerCase()) { fail(i, `email must be @${appConfig.allowedStudentDomain}`); break; }
           const b = L.batchByCode.get(r.batch_code);
           if (!b) { fail(i, `unknown batch_code "${r.batch_code}"`); break; }
+          let secondaryId: string | null = null;
+          if (r.secondary_batch_code) {
+            const sec = L.batchByCode.get(r.secondary_batch_code);
+            if (!sec) { fail(i, `unknown secondary_batch_code "${r.secondary_batch_code}"`); break; }
+            if (sec.id === b.id) { fail(i, 'secondary_batch_code must differ from batch_code'); break; }
+            secondaryId = sec.id;
+          }
           const { data: profile } = await supabase.from('profiles').select('id, role').eq('email', r.email).maybeSingle();
           if (profile) {
             if ((profile as { role: string }).role !== 'student') { fail(i, 'email belongs to a staff account'); break; }
@@ -227,13 +234,13 @@ export async function runCsvImport(supabase: Supabase, key: EntityKey, text: str
               report.skipped++;
               break;
             }
-            const { error } = await supabase.from('students').insert({ id: (profile as { id: string }).id, roll_number: r.roll_number, batch_id: b.id, status: r.status });
+            const { error } = await supabase.from('students').insert({ id: (profile as { id: string }).id, roll_number: r.roll_number, batch_id: b.id, secondary_batch_id: secondaryId, status: r.status });
             if (error) throw error;
             report.updated++; // existing sign-in, now mapped
             break;
           }
           const userId = await provisionUser({ email: r.email, fullName: r.full_name, phone: r.phone, role: 'student' });
-          const { error } = await supabase.from('students').insert({ id: userId, roll_number: r.roll_number, batch_id: b.id, status: r.status });
+          const { error } = await supabase.from('students').insert({ id: userId, roll_number: r.roll_number, batch_id: b.id, secondary_batch_id: secondaryId, status: r.status });
           if (error) {
             await deleteUser(userId);
             throw error;

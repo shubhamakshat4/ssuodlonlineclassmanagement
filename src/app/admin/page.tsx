@@ -11,10 +11,10 @@ import { todayAndUpcoming } from '@/lib/queries/sessions';
 export const dynamic = 'force-dynamic';
 
 const QUICK_LINKS = [
-  { href: '/admin/timetable', label: 'Timetable builder', text: 'Weekly slots per batch with clash detection.' },
+  { href: '/admin/timetable', label: 'Timetable builder', text: 'Weekly recurring slots per class group, with clash detection.' },
   { href: '/admin/sessions', label: 'Sessions', text: 'Cancel, reschedule, add an extra class.' },
-  { href: '/admin/students', label: 'Students', text: 'Map new sign-ins to a batch, import CSV.' },
-  { href: '/admin/attendance', label: 'Attendance report', text: 'Per batch and subject, CSV export.' },
+  { href: '/admin/students', label: 'Students', text: 'Map new sign-ins to a class group, import CSV.' },
+  { href: '/admin/attendance', label: 'Attendance report', text: 'Per class group and subject, CSV export.' },
 ];
 
 export default async function AdminHome() {
@@ -46,7 +46,7 @@ export default async function AdminHome() {
           <Stat label="Faculty" value={n(teachers)} icon={Users} />
         </Link>
         <Link href="/admin/batches">
-          <Stat label="Active batches" value={n(batches)} icon={Layers} hint={`${n(programs)} programme${n(programs) === 1 ? '' : 's'}`} />
+          <Stat label="Class groups" value={n(batches)} icon={Layers} hint={`${n(programs)} programme${n(programs) === 1 ? '' : 's'}`} />
         </Link>
         <Link href="/admin/sync-health">
           <Stat label="Meeting sync" value={n(failed) ? `${n(failed)} failed` : 'Healthy'} icon={n(failed) ? AlertTriangle : CalendarClock} hint={`${n(pending)} awaiting Teams link`} tone={n(failed) ? 'warn' : 'good'} />

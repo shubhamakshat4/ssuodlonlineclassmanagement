@@ -1,15 +1,15 @@
 # Test report
 
-Final state at the end of the autonomous build (20 Sep 2026). `npm test` = **142 tests, 142 passing, 0 failing**
-across 17 files; `npm run lint`, `npm run typecheck`, `npm run build` clean.
+Updated 24 Sep 2026 (real ODL data loaded). `npm test` = **159 tests, 159 passing, 0 failing**
+across 19 files; `npm run lint`, `npm run typecheck`, `npm run build` clean.
 
 ## How the suites run
 
 | Suite | Runner | Environment | Command |
 |---|---|---|---|
-| Unit (54 tests, 10 files) | Vitest | Node, no services | `npm run test:unit` |
-| Database / RLS (88 tests, 7 files) | Vitest | **Embedded Postgres 17** booted per run; every migration + `seed.sql` applied to a template DB; each file clones it and runs statements as `anon` / `authenticated` (with JWT claims) / `service_role`, exactly like PostgREST | `npm run test:db` |
-| E2E (3 files, 8 tests) | Playwright | Executed against the **live project** (`next start` on :3100, real GoTrue/PostgREST): student join journey 3/3, teacher override journey 2/2, demo walkthrough 3/3 | `E2E_BASE_URL=http://localhost:3100 E2E_NO_SERVER=1 npm run test:e2e` |
+| Unit (61 tests, 11 files) | Vitest | Node, no services | `npm run test:unit` |
+| Database / RLS (98 tests, 8 files) | Vitest | **Embedded Postgres 17** booted per run; every migration + `seed.sql` applied to a template DB; each file clones it and runs statements as `anon` / `authenticated` (with JWT claims) / `service_role`, exactly like PostgREST | `npm run test:db` |
+| E2E (3 files, 9 tests) | Playwright | Executed against the **live project with real data**; fixtures are resolved from the database, so the suite is data-agnostic | `E2E_BASE_URL=http://localhost:3100 E2E_NO_SERVER=1 npm run test:e2e` | `E2E_BASE_URL=http://localhost:3100 E2E_NO_SERVER=1 npm run test:e2e` |
 | Graph spike | tsx script | Real tenant when `GRAPH_MODE=real` + `MS_*` | `npm run graph:spike` — **executed against the mock only** (B1) |
 
 Everything in CI (`.github/workflows/ci.yml`) runs without external services and with Graph mocked.

@@ -6,7 +6,8 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e',
-  timeout: 60_000,
+  // Admin screens read several hundred rows from a remote database; allow for that.
+  timeout: 120_000,
   fullyParallel: false,
   retries: 0,
   reporter: [['list']],

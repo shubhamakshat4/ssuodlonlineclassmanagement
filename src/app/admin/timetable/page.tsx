@@ -54,7 +54,7 @@ export default async function TimetablePage({ searchParams }: { searchParams: Pr
     <>
       <PageHeader
         title="Timetable builder"
-        description="Weekly recurring slots per batch. The nightly job expands them into sessions 21 days ahead, skipping holidays. Clashes (same teacher or same batch) are rejected."
+        description="Weekly recurring slots per class group. The nightly job expands them into sessions 21 days ahead, skipping holidays. Clashes (same teacher or same batch) are rejected."
         actions={
           <form method="get" className="flex items-center gap-2">
             <Select name="batch" defaultValue={batch.id} className="w-56">

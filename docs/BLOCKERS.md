@@ -14,3 +14,13 @@ Things that could not be finished in this build, what was tried, and exactly wha
 - **Google provider configured (21 Sep 2026)** — student Google sign-in works; unmapped university accounts see "No classes are assigned to you yet — contact the ODL department"; sign-ups switch is ON with the hook enforcing who may create an account.
 - **Demo caveat:** functions run with `GRAPH_MODE=mock`, so the provisioner assigns fake `teams.microsoft.com/…/mock/…` links to new sessions. Go-live: `supabase secrets set GRAPH_MODE=real MS_…`, `npm run demo:reset-links`.
 - **Rotate:** the database password, service-role key and CLI access token were all shared in chat. Rotate in the dashboard; update `.env.local` (`SUPABASE_DB_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ACCESS_TOKEN`).
+
+## B3 — Faculty Microsoft 365 addresses not yet supplied
+- **What:** the 21 faculty from the timetable were created with placeholder logins (`first.last@srisriuniversity.edu.in`) and placeholder UPNs (`…@srisriuniversity.onmicrosoft.com`).
+- **Impact:** faculty cannot sign in until their real address is set, and Teams co-organiser assignment is nominal (the meeting is still created and students can join).
+- **Needs:** the list of faculty M365 sign-in addresses from IT. Then update each on **Admin → Teachers**, or re-import via **Admin → Import → Teachers** (matched on email), and run the provisioner again so the co-organiser is applied.
+
+## B4 — Two B.Com class groups have students but no classes
+- **What:** `BCOM-S2` (1 student) and `BCOM-S4` (1 student) exist in the enrolment data, but the source timetable only schedules B.Com Semester 1.
+- **Impact:** those two students see "no classes scheduled".
+- **Needs:** either add their classes to the timetable (Admin → Import → Timetable slots, or the Sessions screen), or confirm those students are not taking online classes this term.

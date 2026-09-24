@@ -9,27 +9,25 @@ npm ci            # once
 npm run dev       # http://localhost:3000   (or: npm run build && npx next start -p 3100 if 3000 is busy)
 ```
 
-## Demo accounts (all invented, password sign-in at `/login`)
+## Accounts
 
-| Role | Email | Password | Shows |
-|---|---|---|---|
-| Admin | `odl.admin@srisriuniversity.edu.in` | `AdminPass12345` | everything |
-| Admin | `demo.admin@srisriuniversity.edu.in` | `DemoAdmin12345` | second admin for the demo team |
-| Teacher | `anand.mishra@srisriuniversity.edu.in` | `TeacherPass12345` | Financial Management (BBA-2025) + Strategic Management (MBA-2025) |
-| Teacher | `kavita.sen@srisriuniversity.edu.in` | `TeacherPass12345` | Marketing Management + Operations Research |
-| Teacher | `rohit.verma@srisriuniversity.edu.in` | `TeacherPass12345` | forced password change on first login (demo of the invite flow) |
-| Student | any `@srisriuniversity.edu.in` Google account (yours is pre-mapped to BBA-ODL-2025) | Google sign-in only | dashboard, or "No classes are assigned to you yet — contact the ODL department" until mapped — **needs the Google provider configured** (`docs/GOOGLE_SSO_SETUP.md`) |
+| Role | Email | Password |
+|---|---|---|
+| Admin | `odl.admin@srisriuniversity.edu.in` | `AdminPass12345` |
+| Admin | `demo.admin@srisriuniversity.edu.in` | `DemoAdmin12345` |
+| Faculty | the 21 real faculty, e.g. `jharana.rani@srisriuniversity.edu.in` | **placeholder logins** — no password set until IT supplies real addresses (see `docs/BLOCKERS.md` B3) |
+| Student | their real `@srisriuniversity.edu.in` Google account | Google sign-in only, no password |
 
-Students never have passwords. The 16 other seeded students are fictional addresses and cannot sign in.
+To let a specific teacher test now, set a password for them in Supabase → Authentication → Users, or run the
+E2E helper which does it for one account.
 
 ## What is in the data
-- 2 programmes, 3 batches, 6 subjects, 3 teachers, 17 students, 11 weekly timetable slots, 3 holidays.
-- Sessions for the next 21 days, generated from the timetable exactly as the nightly job will do it.
-- Every upcoming session has an **editable placeholder link** `https://teams.microsoft.com/l/meetup-join/demo/…` and shows as "Teams ready".
-  These are not real meetings. To demo a real join, create any Teams/Meet/Zoom meeting yourself and paste it as an override
-  (teacher: *Edit link / roster*; admin: *Override link* on `/admin/sessions`).
-- One session is deliberately in the **failed** state so `/admin/sync-health` has something to show.
-- Two past classes have recordings rows (one available, one expired) so the student Recordings tab and the RLS expiry rule can be shown; playback needs Graph credentials.
+- **Real ODL data** (loaded 24 Sep 2026 from the workbooks in `docs/`): 6 programmes, 20 class groups
+  (programme + semester), 98 subjects, 21 faculty, 637 students, and 331 dated classes across the 16 Sundays
+  from 13 Sep to 27 Dec 2026.
+- Every upcoming class has a **real Microsoft Teams link** created by the provisioner.
+- Students follow one class group and can be given a second one (Admin → Students → "Second class group")
+  when they are catching up on a semester; both timetables then appear.
 
 ## Suggested 15-minute script
 1. Admin → Overview tiles → Programmes/Batches → open BBA-ODL-2025 (subjects, teachers, roster).
