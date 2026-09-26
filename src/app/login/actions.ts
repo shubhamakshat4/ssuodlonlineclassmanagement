@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { clientIp, LIMITS, rateLimit } from '@/lib/rate-limit';
 import { createClient } from '@/lib/supabase/server';
 import { ROLE_HOME, safeNextPath, type Role } from '@/lib/auth/routing';
+import { resolveLoginEmail } from '@/lib/auth/resolve-login';
 
 export interface LoginState {
   error?: string;
@@ -12,13 +13,20 @@ export interface LoginState {
 
 /** Email + password sign-in for every role. */
 export async function signInWithPassword(_prev: LoginState, formData: FormData): Promise<LoginState> {
-  const email = String(formData.get('email') ?? '')
+  const typed = String(formData.get('email') ?? '')
     .trim()
     .toLowerCase();
   const password = String(formData.get('password') ?? '');
   const next = safeNextPath(String(formData.get('next') ?? ''), '');
 
-  if (!email || !password) return { error: 'Enter your email and password.' };
+  if (!typed || !password) return { error: 'Enter your email and password.' };
+
+  // Students may type their college address or their personal one; both lead to the same account.
+  const resolved = await resolveLoginEmail(typed);
+  if (resolved.ambiguous) {
+    return { error: 'That address is on more than one student record. Please sign in with your college email, or contact the ODL department.' };
+  }
+  const email = resolved.email;
 
   const ip = clientIp(await headers());
   const [ipOk, emailOk] = await Promise.all([

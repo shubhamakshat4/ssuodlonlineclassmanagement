@@ -10,7 +10,7 @@ export function LoginForm({ next, initialError }: { next: string; initialError?:
   return (
     <form action={action} className="grid gap-4" data-testid="login-form">
       <input type="hidden" name="next" value={next} />
-      <Field label="Email" htmlFor="email">
+      <Field label="Email" htmlFor="email" hint="Students may use either their college or their personal address.">
         <Input id="email" name="email" type="email" autoComplete="username" required />
       </Field>
       <Field label="Password" htmlFor="password">

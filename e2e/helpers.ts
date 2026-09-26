@@ -118,6 +118,8 @@ export async function loadFixture(): Promise<Fixture> {
       .single();
     if (insertError) throw new Error(`could not create the throwaway session: ${insertError.message}`);
 
+    await clearSignInThrottle(teacher.email, student.profiles.email, ADMIN.email);
+
     return {
       studentEmail: student.profiles.email,
       studentId: student.id,
@@ -131,6 +133,22 @@ export async function loadFixture(): Promise<Fixture> {
     };
   }
   throw new Error('could not find a joinable upcoming class with an active student');
+}
+
+/**
+ * Clear the sign-in throttle for the accounts this suite drives.
+ *
+ * A full run signs the same teacher in four times, so two runs inside the limiter's 15-minute window
+ * exhaust the 8-attempt budget and every later spec fails with "Too many sign-in attempts". That is
+ * the limiter working correctly; the suite simply has to reset the counters it consumes itself, the
+ * same way it deletes its own throwaway sessions. Production behaviour is untouched.
+ */
+export async function clearSignInThrottle(...emails: string[]) {
+  const admin = adminClient();
+  const keys = emails.filter(Boolean).flatMap((e) => [`login:email:${e.toLowerCase()}`, `reset:email:${e.toLowerCase()}`]);
+  if (keys.length) await admin.from('rate_limits').delete().in('key', keys);
+  // The per-IP budget is shared by every account the run touches, so clear this machine's too.
+  await admin.from('rate_limits').delete().like('key', 'login:ip:%');
 }
 
 /** Delete the throwaway session (attendance cascades) plus any left by an earlier run. */

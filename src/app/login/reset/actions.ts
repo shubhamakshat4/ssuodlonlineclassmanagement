@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { clientIp, LIMITS, rateLimit } from '@/lib/rate-limit';
 import { validatePassword } from '@/lib/auth/password';
+import { resolveLoginEmail } from '@/lib/auth/resolve-login';
 
 /**
  * Password reset by security question, so nothing depends on email delivery: Supabase's built-in
@@ -35,10 +36,12 @@ async function withinLimits(email: string): Promise<boolean> {
 
 /** Step 1: find the questions this person chose. */
 export async function findQuestions(_prev: ResetState, formData: FormData): Promise<ResetState> {
-  const email = String(formData.get('email') ?? '')
+  const typed = String(formData.get('email') ?? '')
     .trim()
     .toLowerCase();
-  if (!email) return { stage: 'email', error: 'Enter your email address.' };
+  if (!typed) return { stage: 'email', error: 'Enter your email address.' };
+  // Either of a student's addresses reaches the same account.
+  const email = (await resolveLoginEmail(typed)).email;
   if (!(await withinLimits(email))) return { stage: 'email', error: 'Too many attempts. Please wait 15 minutes and try again.' };
 
   const admin = createAdminClient();
@@ -59,9 +62,7 @@ export async function findQuestions(_prev: ResetState, formData: FormData): Prom
 
 /** Step 2: check every answer, then set the new password. */
 export async function resetPassword(prev: ResetState, formData: FormData): Promise<ResetState> {
-  const email = String(formData.get('email') ?? '')
-    .trim()
-    .toLowerCase();
+  const email = (await resolveLoginEmail(String(formData.get('email') ?? ''))).email;
   const password = String(formData.get('password') ?? '');
   const confirm = String(formData.get('confirm') ?? '');
   const again = { stage: 'answer' as const, email, questions: prev.questions };

@@ -9,9 +9,18 @@ A student record carries both addresses separately, and either may be blank:
 | `college_email` | `SSU Email Id` | the university has not issued one |
 | `personal_email` | `Email Id` | the workbook has none |
 
-**They sign in with the college email when there is one, and with the personal email otherwise.**
-That is the only rule; nothing is ever generated. `roll_number` is blank the same way, for admissions
-the university has not issued one for.
+**Either address signs them in, with the same password.** Supabase Auth holds one email per account,
+so the two cannot both be login identities; instead `resolveLoginEmail()` translates whichever address
+was typed into the one the account is held under, before authentication happens. It stays one account
+with one password - there is no second account to keep in step, and changing the password changes it
+for both addresses. The account is held under the college address when there is one, otherwise the
+personal one.
+
+Nothing is ever generated. `roll_number` is blank the same way, for admissions the university has not
+issued one for.
+
+If a personal address were ever shared by two students, sign-in refuses rather than guessing which
+account was meant, and asks them to use their college address. (No address is shared today.)
 
 As the source workbooks stand today:
 

@@ -71,9 +71,13 @@ test('student sees classes, timetable and profile', async ({ page, baseURL }) =>
   await expect(page.locator('body')).toContainText(/College email/i);
   await expect(page.locator('body')).toContainText(/Personal email/i);
   // students sign in with a password now, so they get the header link and the reset setup
-  await page.getByRole('link', { name: /Change password/i }).click();
+  await expect(page.getByRole('link', { name: /Change password/i })).toHaveAttribute('href', '/account/password');
+  await page.goto(`${baseURL}/account/password`);
   await expect(page.locator('#password')).toBeVisible();
   await expect(page.getByRole('link', { name: /security questions/i })).toBeVisible();
+  await page.goto(`${baseURL}/account/security-questions`);
+  await expect(page.locator('#question_1')).toBeVisible();
+  await expect(page.locator('#answer_2')).toBeVisible();
 });
 
 test('roles cannot enter each other’s area', async ({ page, baseURL }) => {

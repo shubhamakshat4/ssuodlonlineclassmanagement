@@ -50,7 +50,8 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 <Input id="personal_email" name="personal_email" type="email" defaultValue={s.personal_email ?? ''} />
               </Field>
               <p className="-mt-1 text-xs text-muted-foreground">
-                Signs in as <strong className="font-mono text-foreground">{p.email}</strong> — the college email when there is one, otherwise the personal one.
+                Signs in with <strong>either</strong> address above, using the same password. The account itself is held under{' '}
+                <strong className="font-mono text-foreground">{p.email}</strong>.
               </p>
               <Field label="Phone" htmlFor="phone">
                 <Input id="phone" name="phone" defaultValue={p.phone ?? ''} />

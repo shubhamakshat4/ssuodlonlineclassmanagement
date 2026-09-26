@@ -324,3 +324,20 @@ One entry per phase. Newest at the bottom.
   sign-up rule, 1 new for a student with no roll number and only a personal email), `next build`.
   The Playwright journeys need the migration on the live project first - see BLOCKERS B7.
 
+## Either address signs a student in (26 Sep 2026)
+- **The gap:** the login was the college address when a student had one, so the 350 students who have
+  both could not use their personal address at all.
+- **Fix:** `src/lib/auth/resolve-login.ts` translates whichever address was typed into the one the
+  account is held under, before GoTrue is called. One auth user, one password, two accepted addresses -
+  no second account to keep in step, and a password change covers both. Used by sign-in and by the
+  security-question reset. A personal address shared by two students is refused rather than guessed
+  (none is shared today). Rate limiting keys on the resolved address, so aliases cannot multiply the
+  attempt budget.
+- **Test:** `e2e/student-login.spec.ts` sets a password on a student who has both addresses, signs in
+  with each, checks it is one profile and not two, and restores the account.
+- **Also:** the E2E suite now clears the sign-in throttle for the accounts it drives. A full run signs
+  the same teacher in four times, so two runs inside the limiter's 15-minute window exhausted the
+  8-attempt budget and later specs failed with "Too many sign-in attempts" - the limiter working
+  correctly, but something CI would hit on any retry. Production behaviour is unchanged.
+- **Verified:** lint, typecheck, 167 unit + RLS, and 12/12 Playwright journeys against the live data.
+

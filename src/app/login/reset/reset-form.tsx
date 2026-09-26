@@ -60,7 +60,7 @@ export function ResetForm() {
 
   return (
     <form action={findAction} className="grid gap-4">
-      <Field label="Your email address" htmlFor="email" hint="The address you sign in with.">
+      <Field label="Your email address" htmlFor="email" hint="Your college or your personal address - either one works.">
         <Input id="email" name="email" type="email" autoComplete="username" required />
       </Field>
       {state.error ? (
