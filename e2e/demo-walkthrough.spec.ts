@@ -67,8 +67,13 @@ test('student sees classes, timetable and profile', async ({ page, baseURL }) =>
   await expect(page.locator('body')).toContainText(/All scheduled classes/i);
   await page.goto(`${baseURL}/student/profile`);
   await expect(page.locator('body')).toContainText(/Roll number/i);
-  // students sign in with Google, so they are never offered a portal password
-  await expect(page.getByRole('link', { name: /Change password/i })).toHaveCount(0);
+  // both addresses are shown, and neither is invented: one of them may read "Not issued yet"
+  await expect(page.locator('body')).toContainText(/College email/i);
+  await expect(page.locator('body')).toContainText(/Personal email/i);
+  // students sign in with a password now, so they get the header link and the reset setup
+  await page.getByRole('link', { name: /Change password/i }).click();
+  await expect(page.locator('#password')).toBeVisible();
+  await expect(page.getByRole('link', { name: /security questions/i })).toBeVisible();
 });
 
 test('roles cannot enter each other’s area', async ({ page, baseURL }) => {

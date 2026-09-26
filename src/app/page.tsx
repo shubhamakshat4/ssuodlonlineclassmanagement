@@ -9,34 +9,38 @@ export const metadata = {
 };
 
 /**
- * Landing page: the campus, the name, and a way in. Nothing else — anyone arriving here is either
+ * Landing page: the building, the name, and a way in. Nothing else — anyone arriving here is either
  * signing in or has followed a link by mistake.
+ *
+ * The photograph is a tall portrait, so it is given its own column on the right rather than being
+ * stretched across the page: the whole silhouette stays visible, and its left edge dissolves into the
+ * maroon so the type has a clean, dark field to sit on.
  */
 export default function Home() {
   return (
     <main className="relative grid min-h-screen grid-rows-[auto_1fr_auto] overflow-hidden">
-      {/* Campus photograph, slowly drifting, behind a deep maroon wash so the type stays readable. */}
-      <div className="absolute inset-0 -z-10">
+      {/* Not -z-10: a negative index would paint this behind the page background and hide it.
+          One full-bleed layer, so there is no column edge to show a seam. */}
+      <div className="absolute inset-0 bg-[#300d0d]">
         <Image
-          src="/brand/campus.jpg"
-          alt="The Sri Sri University campus at Cuttack"
+          src="/brand/building.jpg"
+          alt="The Sri Sri International Center for Integrated Medicine on the Sri Sri University campus"
           fill
           priority
           sizes="100vw"
-          className="hero-pan object-cover object-[30%_62%] saturate-[1.15] contrast-[1.06]"
+          className="hero-pan object-cover object-[50%_32%]"
         />
-        {/* Dark where the type sits, almost clear over the campus, so the photograph stays a photograph. */}
-        <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(28,8,8,0.93)_0%,rgba(38,10,10,0.78)_30%,rgba(45,14,14,0.34)_62%,rgba(45,14,14,0.12)_100%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(20,6,6,0.5)_0%,transparent_22%,transparent_62%,rgba(20,6,6,0.55)_100%)]" />
-        <div className="absolute inset-0 bg-[#6d1414] mix-blend-multiply opacity-[0.18]" />
+        {/* Opaque where the type sits, clear over the building. */}
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,#300d0d_0%,rgba(48,13,13,0.97)_22%,rgba(48,13,13,0.72)_38%,rgba(48,13,13,0.28)_58%,transparent_78%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(28,7,7,0.6)_0%,transparent_26%,transparent_66%,rgba(28,7,7,0.7)_100%)]" />
       </div>
 
-      <header className="fade-up px-6 pt-8 sm:px-10">
+      <header className="fade-up relative px-6 pt-8 sm:px-10">
         <BrandLogo variant="white" width={200} className="h-auto w-[164px] sm:w-[200px]" />
       </header>
 
-      <section className="flex items-center px-6 py-14 sm:px-10">
-        <div className="max-w-2xl">
+      <section className="relative flex items-center px-6 py-14 sm:px-10">
+        <div className="max-w-xl">
           <p className="fade-up text-[11px] font-semibold uppercase tracking-[0.22em] text-white/70" style={{ animationDelay: '60ms' }}>
             Open &amp; Distance Learning
           </p>
@@ -50,14 +54,14 @@ export default function Home() {
           <div className="fade-up mt-10 flex flex-wrap items-center gap-4" style={{ animationDelay: '300ms' }}>
             <Link
               href="/login"
-              className="group inline-flex h-13 items-center justify-center gap-2 rounded-xl bg-white px-8 py-3.5 text-[15px] font-semibold text-[#6d1414] shadow-lg shadow-black/25 transition-all hover:-translate-y-0.5 hover:shadow-xl"
+              className="group inline-flex items-center justify-center gap-2 rounded-xl bg-white px-8 py-3.5 text-[15px] font-semibold text-[#6d1414] shadow-lg shadow-black/30 transition-all hover:-translate-y-0.5 hover:shadow-xl"
             >
               Sign in
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
             </Link>
             <Link
               href="/login/reset"
-              className="inline-flex h-13 items-center justify-center rounded-xl border border-white/35 px-7 py-3.5 text-[15px] font-medium text-white/90 backdrop-blur-sm transition-colors hover:border-white/60 hover:bg-white/10"
+              className="inline-flex items-center justify-center rounded-xl border border-white/35 px-7 py-3.5 text-[15px] font-medium text-white/90 backdrop-blur-sm transition-colors hover:border-white/60 hover:bg-white/10"
             >
               Forgotten password
             </Link>
@@ -65,7 +69,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="fade-up px-6 pb-8 text-[13px] text-white/55 sm:px-10" style={{ animationDelay: '380ms' }}>
+      <footer className="fade-up relative px-6 pb-8 text-[13px] text-white/55 sm:px-10" style={{ animationDelay: '380ms' }}>
         Sri Sri University, Cuttack &middot; All times are Indian Standard Time
       </footer>
     </main>

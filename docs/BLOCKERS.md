@@ -68,7 +68,7 @@ Things that could not be finished in this build, what was tried, and exactly wha
   still contains it as the password its own local fixture creates; that is fine once the live account no
   longer uses it.
 
-## B7 - The September 2026 changes are written but not yet on the live project
+## B7 - The September 2026 changes are written but not yet on the live project - RESOLVED (26 Sep 2026)
 Everything below is code and migrations that are committed and tested against a fresh database. None
 of it has been applied to the cloud project, because that needs a write to shared infrastructure.
 Run these in order, from the project folder:
@@ -87,7 +87,7 @@ Until `db:migrate` has run, the app will not show a student their classes: the c
 `students.college_email`, which does not exist on the live database yet. Three Playwright journeys fail
 for exactly this reason and pass again once the migration is applied.
 
-## B8 - Invented student identifiers are still on the live database
+## B8 - Invented student identifiers are still on the live database - RESOLVED (26 Sep 2026)
 - **What:** the first import generated an `@srisriuniversity.edu.in` login for the 286 August 2026
   admissions (for example `sayed.tafazul.tmp-bba-aug2026-0352@srisriuniversity.edu.in`) and `TMP-...`
   roll numbers for everyone without one. Those addresses do not exist and never did.
@@ -96,4 +96,19 @@ for exactly this reason and pass again once the migration is applied.
   college address when there is one and the personal address otherwise - see `docs/STUDENT_ACCOUNTS.md`.
 - **Needs:** `npm run data:fix-emails -- --apply` (see B7), which reads the workbooks in `docs/` and
   replaces each invented login with the student's real address.
+
+### B7 / B8 outcome (26 Sep 2026)
+All four commands were run against the live project and verified afterwards:
+
+    college_email column      present
+    security_questions table  present
+    students                  638
+    invented logins left      0
+    TMP- roll numbers left    0
+    with a college email      350   (matches the workbooks exactly)
+    with a personal email     637
+    no roll number            286   (the August 2026 admissions)
+    signing in with their personal email  287
+
+Auth settings confirmed applied: password minimum 8, Google provider off, email sign-in on.
 

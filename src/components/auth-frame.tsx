@@ -11,15 +11,14 @@ export function AuthFrame({ title, intro, children, footer }: { title: string; i
     <main className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
       <section className="relative hidden overflow-hidden lg:block">
         <Image
-          src="/brand/campus.jpg"
-          alt="The Sri Sri University campus at Cuttack"
+          src="/brand/building.jpg"
+          alt="The Sri Sri International Center for Integrated Medicine on the Sri Sri University campus"
           fill
           priority
           sizes="55vw"
-          className="hero-pan object-cover object-[30%_62%] saturate-[1.15] contrast-[1.06]"
+          className="hero-pan object-cover object-[50%_36%]"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(24,7,7,0.86)_0%,rgba(38,10,10,0.42)_45%,rgba(24,7,7,0.9)_100%)]" />
-        <div className="absolute inset-0 bg-[#6d1414] mix-blend-multiply opacity-[0.22]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(29,7,7,0.62)_0%,rgba(38,10,10,0.18)_38%,rgba(29,7,7,0.82)_100%)]" />
         <div className="relative flex h-full flex-col justify-between p-12">
           <Link href="/" className="inline-block">
             <BrandLogo variant="white" width={200} className="fade-up h-auto w-[200px]" />
