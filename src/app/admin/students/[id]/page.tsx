@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, Field, Input, PageHeader, Sel
 import { createClient } from '@/lib/supabase/server';
 import type { Attendance, Batch, Profile, Student } from '@/lib/db/types';
 import { formatIst } from '@/lib/domain/time';
-import { deleteStudent, updateStudent } from '../actions';
+import { appConfig } from '@/lib/env';
+import { deleteStudent, setStudentPassword, updateStudent } from '../actions';
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -42,14 +43,20 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               <Field label="Full name" htmlFor="full_name">
                 <Input id="full_name" name="full_name" defaultValue={p.full_name} required />
               </Field>
-              <Field label="University email" htmlFor="email">
-                <Input id="email" name="email" type="email" defaultValue={p.email} required />
+              <Field label="College email" htmlFor="college_email" hint="The @srisriuniversity.edu.in address, once the university has issued one. Leave blank if there is none.">
+                <Input id="college_email" name="college_email" type="email" defaultValue={s.college_email ?? ''} />
               </Field>
+              <Field label="Personal email" htmlFor="personal_email" hint="The student's own address.">
+                <Input id="personal_email" name="personal_email" type="email" defaultValue={s.personal_email ?? ''} />
+              </Field>
+              <p className="-mt-1 text-xs text-muted-foreground">
+                Signs in as <strong className="font-mono text-foreground">{p.email}</strong> — the college email when there is one, otherwise the personal one.
+              </p>
               <Field label="Phone" htmlFor="phone">
                 <Input id="phone" name="phone" defaultValue={p.phone ?? ''} />
               </Field>
-              <Field label="Roll number" htmlFor="roll_number">
-                <Input id="roll_number" name="roll_number" defaultValue={s.roll_number} required className="font-mono" />
+              <Field label="Roll number" htmlFor="roll_number" hint="Leave blank until the university issues one.">
+                <Input id="roll_number" name="roll_number" defaultValue={s.roll_number ?? ''} className="font-mono" />
               </Field>
               <Field label="Primary class group" htmlFor="batch_id" hint="Programme + semester whose timetable the student follows.">
                 <Select id="batch_id" name="batch_id" defaultValue={s.batch_id} required>
@@ -89,6 +96,26 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 <input type="hidden" name="id" value={id} />
               </ActionForm>
             </div>
+          </CardContent>
+        </Card>
+        <Card className="self-start">
+          <CardHeader>
+            <CardTitle>Password</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Passwords are held by Supabase Auth as a one-way hash, so nobody — not even an administrator — can read one. To help a student who cannot sign in,
+              set a new one here and tell them what it is. They will be asked to change it the moment they sign in.
+            </p>
+            <ActionForm action={setStudentPassword} submitLabel="Set password" confirm="Set a new password for this student?">
+              <input type="hidden" name="id" value={id} />
+              <Field label="New password" htmlFor="password" hint={`Leave blank to use the standard first-login password, ${appConfig.studentDefaultPassword}.`}>
+                <Input id="password" name="password" placeholder={appConfig.studentDefaultPassword} autoComplete="off" />
+              </Field>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="must_change" defaultChecked /> Ask them to choose their own password at next sign-in
+              </label>
+            </ActionForm>
           </CardContent>
         </Card>
         <Card>

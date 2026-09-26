@@ -22,7 +22,9 @@
     "smoke:cloud": "tsx scripts/smoke-cloud.ts",
     "data:import": "tsx scripts/import-real-data.ts",
     "data:verify": "tsx scripts/verify-timetable.ts",
-    "auth:set-password": "tsx scripts/set-password.ts"
+    "auth:set-password": "tsx scripts/set-password.ts",
+    "data:fix-emails": "tsx scripts/fix-student-emails.ts",
+    "auth:config": "tsx scripts/auth-config.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",

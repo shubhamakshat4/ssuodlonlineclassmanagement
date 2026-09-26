@@ -18,6 +18,12 @@ export default async function PasswordPage() {
       }
     >
       <PasswordForm />
+      <p className="mt-6 border-t border-border pt-4 text-sm text-muted-foreground">
+        <a href="/account/security-questions" className="font-medium text-primary hover:underline">
+          Set your security questions
+        </a>{' '}
+        so you can reset your password yourself if you forget it.
+      </p>
     </AuthFrame>
   );
 }

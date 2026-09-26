@@ -454,36 +454,60 @@ describe('service role', () => {
   });
 });
 
-describe('auth guards (any @domain Google account may sign in; batch mapping decides what they see)', () => {
-  it('a brand-new Google user at the university domain is accepted and gets a student profile with no batch', async () => {
+describe('auth guards (accounts are created by the ODL office; class-group mapping decides what they see)', () => {
+  it('rejects a sign-up the ODL office did not create, whatever the domain or provider', async () => {
+    for (const [email, meta] of [
+      ['someone@gmail.com', '{"provider":"email","providers":["email"]}'],
+      ['new.student@srisriuniversity.edu.in', '{"provider":"email","providers":["email"]}'],
+      ['g@srisriuniversity.edu.in', '{"provider":"google","providers":["google"]}'],
+    ]) {
+      const msg = await expectDenied(
+        db.sudo(
+          `insert into auth.users (id, email, raw_app_meta_data, created_at, updated_at)
+           values (gen_random_uuid(), $1, $2::jsonb, now(), now())`,
+          [email, meta],
+        ),
+      );
+      expect(msg, email).toMatch(/created by the ODL office/i);
+    }
+  });
+
+  it('an ODL-created student sees nothing until they are mapped, then sees their class group', async () => {
     const [u] = await db.sudo<{ id: string }>(
       `insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
-       values (gen_random_uuid(), 'New.Student@srisriuniversity.edu.in', '{"provider":"google","providers":["google"]}', '{"full_name":"New Student"}', now(), now()) returning id`,
+       values (gen_random_uuid(), 'New.Student@srisriuniversity.edu.in',
+               '{"provider":"email","providers":["email"],"provisioned_by":"admin"}', '{"full_name":"New Student"}', now(), now()) returning id`,
     );
-    const [p] = await db.sudo<{ role: string; full_name: string; email: string }>('select role, full_name, email from profiles where id = $1', [u.id]);
-    expect(p).toEqual({ role: 'student', full_name: 'New Student', email: 'new.student@srisriuniversity.edu.in' });
-    expect(await db.sudo('select id from students where id = $1', [u.id])).toHaveLength(0);
-    // their Google identity attaches fine
-    await db.sudo(`insert into auth.identities (provider_id, user_id, identity_data, provider) values ('g-new', $1, '{"sub":"g-new","email":"new.student@srisriuniversity.edu.in"}', 'google')`, [u.id]);
-    // unmapped: signed in but sees nothing, and is listed for the admin
+    // profiles rows are written by the provisioning code, not by a trigger
+    expect(await db.sudo('select id from profiles where id = $1', [u.id])).toHaveLength(0);
+    await db.sudo(`insert into profiles (id, role, full_name, email) values ($1, 'student', 'New Student', 'new.student@srisriuniversity.edu.in')`, [u.id]);
+
+    // signed in but unmapped: sees nothing, and is listed for the admin
     expect(await db.rows(asUser(u.id), 'select id from class_sessions')).toHaveLength(0);
     expect(await db.rows(asUser(u.id), 'select id from recordings')).toHaveLength(0);
     expect((await db.rows<{ id: string }>(admin, 'select id from v_unmapped_students')).map((r) => r.id)).toContain(u.id);
     expect((await db.rows<{ id: string }>(asUser(u.id), 'select id from v_unmapped_students')).map((r) => r.id)).toEqual([u.id]);
+
     // admin maps them to BBA-2025 -> timetable appears
     await db.exec(admin, `insert into students (id, roll_number, batch_id) values ($1, 'ODL25BBA777', $2)`, [u.id, F.BATCH_BBA_2025]);
     expect((await db.rows(asUser(u.id), 'select id from class_sessions')).length).toBeGreaterThan(0);
     expect(await db.rows(admin, 'select id from v_unmapped_students where id = $1', [u.id])).toHaveLength(0);
   });
 
-  it('rejects a Google user outside the university domain', async () => {
-    const msg = await expectDenied(
-      db.sudo(
-        `insert into auth.users (id, email, raw_app_meta_data, created_at, updated_at)
-         values (gen_random_uuid(), 'someone@gmail.com', '{"provider":"google","providers":["google"]}', now(), now())`,
-      ),
+  it('a student may be stored with no roll number and only a personal email', async () => {
+    const [u] = await db.sudo<{ id: string }>(
+      `insert into auth.users (id, email, raw_app_meta_data, created_at, updated_at)
+       values (gen_random_uuid(), 'no.roll@gmail.com', '{"provider":"email","providers":["email"],"provisioned_by":"admin"}', now(), now()) returning id`,
     );
-    expect(msg).toMatch(/srisriuniversity.edu.in/);
+    await db.sudo(`insert into profiles (id, role, full_name, email) values ($1, 'student', 'No Roll', 'no.roll@gmail.com')`, [u.id]);
+    await db.exec(admin, `insert into students (id, batch_id, personal_email) values ($1, $2, 'no.roll@gmail.com')`, [u.id, F.BATCH_BBA_2025]);
+    const [row] = await db.rows<{ roll_number: string | null; college_email: string | null; personal_email: string }>(
+      admin,
+      'select roll_number, college_email, personal_email from students where id = $1',
+      [u.id],
+    );
+    expect(row).toEqual({ roll_number: null, college_email: null, personal_email: 'no.roll@gmail.com' });
+    expect((await db.rows(asUser(u.id), 'select id from class_sessions')).length).toBeGreaterThan(0);
   });
 
   it('admin-created email users (app_metadata.provisioned_by) are allowed and get no automatic profile', async () => {
@@ -533,20 +557,19 @@ describe('auth guards (any @domain Google account may sign in; batch mapping dec
     expect(r).toHaveLength(1);
   });
 
-  it('before_user_created_hook rejects only wrong-domain Google sign-ups', async () => {
+  it('before_user_created_hook accepts only accounts the ODL office created', async () => {
     const [ok] = await db.sudo<{ r: Record<string, unknown> }>(
-      `select before_user_created_hook('{"user":{"email":"x@srisriuniversity.edu.in","app_metadata":{"provider":"google","providers":["google"]}}}') as r`,
-    );
-    expect(ok.r).toEqual({});
-    const [wrong] = await db.sudo<{ r: { error?: { http_code: number; message: string } } }>(
-      `select before_user_created_hook('{"user":{"email":"x@gmail.com","app_metadata":{"provider":"google"}}}') as r`,
-    );
-    expect(wrong.r.error?.http_code).toBe(403);
-    expect(wrong.r.error?.message).toMatch(/srisriuniversity.edu.in/);
-    const [e] = await db.sudo<{ r: Record<string, unknown> }>(
       `select before_user_created_hook('{"user":{"email":"t@srisriuniversity.edu.in","app_metadata":{"provider":"email","provisioned_by":"admin"}}}') as r`,
     );
-    expect(e.r).toEqual({});
+    expect(ok.r).toEqual({});
+    for (const meta of ['{"provider":"google","providers":["google"]}', '{"provider":"email"}', '{}']) {
+      const [bad] = await db.sudo<{ r: { error?: { http_code: number; message: string } } }>(
+        `select before_user_created_hook(jsonb_build_object('user', jsonb_build_object('email', 'x@srisriuniversity.edu.in', 'app_metadata', $1::jsonb))) as r`,
+        [meta],
+      );
+      expect(bad.r.error?.http_code, meta).toBe(403);
+      expect(bad.r.error?.message, meta).toMatch(/created by the ODL office/i);
+    }
   });
 
   it('the hook is not callable by app roles', async () => {

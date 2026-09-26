@@ -29,6 +29,8 @@ describe('schema + seed', () => {
       'programs',
       'rate_limits',
       'recordings',
+      'security_answers',
+      'security_questions',
       'students',
       'subject_teachers',
       'subjects',

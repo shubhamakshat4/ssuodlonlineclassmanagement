@@ -1,3 +1,7 @@
+> **Obsolete (26 Sep 2026).** Students no longer sign in with Google: everyone uses an email and
+> password issued by the ODL office. See `docs/STUDENT_ACCOUNTS.md`. The Google provider is turned
+> off by `npm run auth:config -- --apply`. Kept only as a record of how it was configured.
+
 # Google sign-in for students — setup, step by step
 
 **The rule (as decided 21 Sep 2026):**

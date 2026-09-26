@@ -58,11 +58,13 @@ describe('safeNextPath', () => {
 });
 
 describe('validatePassword', () => {
-  it('enforces 12+ chars with a letter and a digit', () => {
-    expect(validatePassword('short1')).toMatch(/12 characters/);
+  it('enforces 8+ chars with a letter and a digit', () => {
+    expect(validatePassword('short1')).toMatch(/8 characters/);
     expect(validatePassword('abcdefghijklmnop')).toMatch(/digit/);
     expect(validatePassword('123456789012')).toMatch(/letter/);
     expect(validatePassword(' abcdefghijk1')).toMatch(/whitespace/);
     expect(validatePassword('TeacherPass12345')).toBeNull();
+    // the first-login password the ODL office hands to students must satisfy the policy
+    expect(validatePassword('srisri@26')).toBeNull();
   });
 });

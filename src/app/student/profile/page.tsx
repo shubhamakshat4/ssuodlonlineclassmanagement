@@ -17,9 +17,11 @@ export default async function StudentProfilePage() {
 
   const rows: [string, React.ReactNode][] = [
     ['Name', p?.full_name ?? ''],
-    ['University email', p?.email ?? ''],
+    ['Signs in as', <span key="login" className="font-mono text-[13px]">{p?.email ?? ''}</span>],
+    ['College email', enrolment?.college_email ? <span key="college" className="font-mono text-[13px]">{enrolment.college_email}</span> : 'Not issued yet'],
+    ['Personal email', enrolment?.personal_email ? <span key="personal" className="font-mono text-[13px]">{enrolment.personal_email}</span> : '—'],
     ['Phone', p?.phone ?? '—'],
-    ['Roll number', enrolment?.roll_number ?? '—'],
+    ['Roll number', enrolment?.roll_number ?? 'Not issued yet'],
     ['Enrolment no.', enrolment?.enrollment_no ?? '—'],
     ['Admission session', enrolment?.intake_session ?? '—'],
     ['Programme', enrolment?.primary?.program_name ?? '—'],

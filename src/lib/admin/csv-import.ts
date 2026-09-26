@@ -1,7 +1,6 @@
 import 'server-only';
 import type { createClient } from '@/lib/supabase/server';
 import { parseCsvObjects } from '@/lib/domain/csv';
-import { appConfig } from '@/lib/env';
 import { deleteUser, provisionUser } from '@/lib/admin/provision';
 import { validateRows, type CsvSpec, type EntityKey, type RowIssue } from '@/lib/admin/csv-specs';
 import * as S from '@/lib/admin/csv-specs';
@@ -216,7 +215,9 @@ export async function runCsvImport(supabase: Supabase, key: EntityKey, text: str
         }
         case 'students': {
           const r = row as z.infer<typeof S.studentsSpec.schema>;
-          if (r.email.split('@')[1] !== appConfig.allowedStudentDomain.toLowerCase()) { fail(i, `email must be @${appConfig.allowedStudentDomain}`); break; }
+          // Sign-in identity: the university address when the row has one, otherwise the personal address.
+          const login = r.college_email || r.personal_email;
+          if (!login) { fail(i, 'give college_email, personal_email, or both'); break; }
           const b = L.batchByCode.get(r.batch_code);
           if (!b) { fail(i, `unknown batch_code "${r.batch_code}"`); break; }
           let secondaryId: string | null = null;
@@ -226,7 +227,15 @@ export async function runCsvImport(supabase: Supabase, key: EntityKey, text: str
             if (sec.id === b.id) { fail(i, 'secondary_batch_code must differ from batch_code'); break; }
             secondaryId = sec.id;
           }
-          const { data: profile } = await supabase.from('profiles').select('id, role').eq('email', r.email).maybeSingle();
+          const studentRow = {
+            roll_number: r.roll_number ?? null,
+            batch_id: b.id,
+            secondary_batch_id: secondaryId,
+            college_email: r.college_email ?? null,
+            personal_email: r.personal_email ?? null,
+            status: r.status,
+          };
+          const { data: profile } = await supabase.from('profiles').select('id, role').eq('email', login).maybeSingle();
           if (profile) {
             if ((profile as { role: string }).role !== 'student') { fail(i, 'email belongs to a staff account'); break; }
             const { data: mapped } = await supabase.from('students').select('id').eq('id', (profile as { id: string }).id).maybeSingle();
@@ -234,13 +243,13 @@ export async function runCsvImport(supabase: Supabase, key: EntityKey, text: str
               report.skipped++;
               break;
             }
-            const { error } = await supabase.from('students').insert({ id: (profile as { id: string }).id, roll_number: r.roll_number, batch_id: b.id, secondary_batch_id: secondaryId, status: r.status });
+            const { error } = await supabase.from('students').insert({ id: (profile as { id: string }).id, ...studentRow });
             if (error) throw error;
             report.updated++; // existing sign-in, now mapped
             break;
           }
-          const userId = await provisionUser({ email: r.email, fullName: r.full_name, phone: r.phone, role: 'student' });
-          const { error } = await supabase.from('students').insert({ id: userId, roll_number: r.roll_number, batch_id: b.id, secondary_batch_id: secondaryId, status: r.status });
+          const userId = await provisionUser({ email: login, fullName: r.full_name, phone: r.phone, role: 'student' });
+          const { error } = await supabase.from('students').insert({ id: userId, ...studentRow });
           if (error) {
             await deleteUser(userId);
             throw error;

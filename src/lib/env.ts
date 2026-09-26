@@ -32,6 +32,8 @@ export const appConfig = {
   joinWindowLeadMinutes: intWithDefault(process.env.JOIN_WINDOW_LEAD_MINUTES, 10),
   recordingRetentionDays: intWithDefault(process.env.RECORDING_RETENTION_DAYS, 30),
   sessionGenerationHorizonDays: intWithDefault(process.env.SESSION_GENERATION_HORIZON_DAYS, 21),
+  /** First-login password the ODL office hands to a student. They must change it before anything else. */
+  studentDefaultPassword: process.env.STUDENT_DEFAULT_PASSWORD ?? 'srisri@26',
 };
 
 export function serverEnv() {

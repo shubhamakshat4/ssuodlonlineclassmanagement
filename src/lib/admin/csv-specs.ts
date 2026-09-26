@@ -260,38 +260,55 @@ export const holidaysSpec: CsvSpec<{ date: string; name: string; batch_code?: st
   ],
 };
 
-export const studentsSpec: CsvSpec<{ roll_number: string; full_name: string; email: string; phone?: string; batch_code: string; secondary_batch_code?: string; status: 'active' | 'on_hold' | 'withdrawn' | 'graduated' }> = {
+export const studentsSpec: CsvSpec<{
+  roll_number?: string;
+  full_name: string;
+  college_email?: string;
+  personal_email?: string;
+  phone?: string;
+  batch_code: string;
+  secondary_batch_code?: string;
+  status: 'active' | 'on_hold' | 'withdrawn' | 'graduated';
+}> = {
   key: 'students',
   title: 'Students',
-  summary: 'Creates student records mapped to a batch. Students then sign in with Google.',
+  summary: 'Creates student records mapped to a class group, with the first-login password.',
   notes: [
-    'email must be @srisriuniversity.edu.in; students never get a password.',
-    'A row whose email already exists but is not yet mapped is mapped (roll number + group); a fully mapped student is skipped.',
+    'Give college_email, personal_email, or both. Leave a column empty when you do not have it - do not invent an address.',
+    'The student signs in with the college email when there is one, otherwise with the personal email.',
+    'New students get the standard first-login password and are asked to choose their own when they sign in.',
+    'roll_number is optional: leave it empty for admissions the university has not issued one for yet.',
+    'A row whose login email already exists but is not yet mapped is mapped (roll number + group); a fully mapped student is skipped.',
     'secondary_batch_code is for a student who also attends another semester (e.g. repeating a missed one). Leave it empty otherwise.',
     'status: active, on_hold, withdrawn, graduated (default active).',
   ],
-  matchOn: 'email',
+  matchOn: 'college_email, else personal_email',
   columns: [
-    { name: 'roll_number', required: true, description: 'Unique roll number' },
     { name: 'full_name', required: true, description: 'Student name' },
-    { name: 'email', required: true, description: 'University Google account' },
+    { name: 'college_email', required: false, description: 'University address, e.g. @srisriuniversity.edu.in. Empty if none has been issued' },
+    { name: 'personal_email', required: false, description: "The student's own address. Becomes the login when there is no college email" },
+    { name: 'roll_number', required: false, description: 'University roll number, if issued' },
     { name: 'phone', required: false, description: 'Free text' },
     { name: 'batch_code', required: true, description: 'Primary class group, e.g. BBA-S1 (programme + semester)' },
     { name: 'secondary_batch_code', required: false, description: 'Optional second class group the student also attends, e.g. a back semester' },
     { name: 'status', required: false, description: 'active / on_hold / withdrawn / graduated' },
   ],
-  schema: z.object({
-    roll_number: z.string().trim().min(2).transform((s) => s.toUpperCase()),
-    full_name: z.string().trim().min(2),
-    email: EMAIL,
-    phone: OPT(z.string().trim()),
-    batch_code: CODE(30),
-    secondary_batch_code: OPT(CODE(30)),
-    status: OPT(z.enum(['active', 'on_hold', 'withdrawn', 'graduated'])).transform((v) => v ?? 'active'),
-  }),
+  schema: z
+    .object({
+      full_name: z.string().trim().min(2),
+      college_email: OPT(EMAIL),
+      personal_email: OPT(EMAIL),
+      roll_number: OPT(z.string().trim().min(2).transform((s) => s.toUpperCase())),
+      phone: OPT(z.string().trim()),
+      batch_code: CODE(30),
+      secondary_batch_code: OPT(CODE(30)),
+      status: OPT(z.enum(['active', 'on_hold', 'withdrawn', 'graduated'])).transform((v) => v ?? 'active'),
+    })
+    .refine((r) => Boolean(r.college_email || r.personal_email), { message: 'give college_email, personal_email, or both' }),
   sampleRows: [
-    ['ODL26BBA010', 'Nikhil Rao', 'nikhil.rao.odl26@srisriuniversity.edu.in', '+91 98000 00010', 'BBA-S1', '', 'active'],
-    ['ODL26BBA011', 'Priya Menon', 'priya.menon.odl26@srisriuniversity.edu.in', '', 'BBA-S2', 'BBA-S1', 'active'],
+    ['Nikhil Rao', 'nikhil.rao.odl26@srisriuniversity.edu.in', 'nikhil.rao@gmail.com', 'ODL26BBA010', '+91 98000 00010', 'BBA-S1', '', 'active'],
+    ['Priya Menon', '', 'priya.menon88@gmail.com', '', '', 'BBA-S1', '', 'active'],
+    ['Arun Das', 'arun.das.odl25@srisriuniversity.edu.in', '', 'ODL25BBA011', '', 'BBA-S2', 'BBA-S1', 'active'],
   ],
 };
 

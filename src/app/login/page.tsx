@@ -8,13 +8,13 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { next, error } = await searchParams;
   return (
     <AuthFrame
-      title="Faculty & admin sign in"
-      intro="Use the email and password issued by the ODL office."
+      title="Sign in"
+      intro="Students, faculty and staff all use the email and password issued by the ODL office."
       footer={
         <>
-          Student?{' '}
-          <Link href="/login/student" className="font-medium text-primary hover:underline">
-            Sign in with your university Google account
+          Forgotten your password?{' '}
+          <Link href="/login/reset" className="font-medium text-primary hover:underline">
+            Reset it with your security questions
           </Link>
         </>
       }

@@ -17,18 +17,16 @@ function siteUrl() {
 
 /**
  * Create the auth user + profile for a new person (SPEC §6).
- *   student: auth user with confirmed email and no password — Google links to it on first sign-in.
+ *   student: the shared first-login password from appConfig.studentDefaultPassword, with
+ *            must_change_password so the portal makes them choose their own before anything else.
+ *            No email is sent - the ODL office hands out the first password.
  *   teacher/admin: invite email (magic link) + `must_change_password` so the first login sets a password.
  * Returns the new user id. Rolls back the auth user if the profile insert fails.
  */
 export async function provisionUser(input: ProvisionInput): Promise<string> {
   const email = input.email.trim().toLowerCase();
-  if (input.role === 'student') {
-    const domain = email.split('@')[1] ?? '';
-    if (domain !== appConfig.allowedStudentDomain.toLowerCase()) {
-      throw new ActionError(`Student email must be @${appConfig.allowedStudentDomain}.`, { email: 'Wrong domain' });
-    }
-  }
+  // No domain rule: a student signs in with their university address when they have been issued one and
+  // with their personal address otherwise, and many of the current cohorts have only the latter.
 
   const admin = createAdminClient();
   let userId: string;
@@ -37,8 +35,9 @@ export async function provisionUser(input: ProvisionInput): Promise<string> {
     const { data, error } = await admin.auth.admin.createUser({
       email,
       email_confirm: true,
+      password: appConfig.studentDefaultPassword,
       user_metadata: { full_name: input.fullName },
-      app_metadata: { role: 'student', provisioned_by: 'admin' },
+      app_metadata: { role: 'student', must_change_password: true, provisioned_by: 'admin' },
     });
     if (error || !data.user) throw new ActionError(userCreateError(error?.message, email));
     userId = data.user.id;
@@ -68,6 +67,17 @@ export async function provisionUser(input: ProvisionInput): Promise<string> {
     throw new ActionError(`Could not create profile: ${profileError.message}`);
   }
   return userId;
+}
+
+/** Set a password directly, the way the ODL office resets one for somebody who cannot sign in. */
+export async function setUserPassword(userId: string, password: string, { mustChange = false } = {}) {
+  const admin = createAdminClient();
+  const { data: existing } = await admin.auth.admin.getUserById(userId);
+  const { error } = await admin.auth.admin.updateUserById(userId, {
+    password,
+    app_metadata: { ...(existing?.user?.app_metadata ?? {}), must_change_password: mustChange },
+  });
+  if (error) throw new ActionError(error.message);
 }
 
 /** Re-send the invite/magic link for a staff account (or a recovery link if already accepted). */

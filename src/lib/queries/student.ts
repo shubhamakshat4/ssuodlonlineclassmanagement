@@ -14,7 +14,9 @@ export interface ClassGroup {
 
 export interface StudentEnrolment {
   status: string;
-  roll_number: string;
+  roll_number: string | null;
+  college_email: string | null;
+  personal_email: string | null;
   intake_session: string | null;
   enrollment_no: string | null;
   /** primary class group (programme + semester) */
@@ -26,16 +28,18 @@ export interface StudentEnrolment {
 
 interface Row {
   status: string;
-  roll_number: string;
+  roll_number: string | null;
   intake_session: string | null;
   enrollment_no: string | null;
   batch_id: string;
   secondary_batch_id: string | null;
+  college_email: string | null;
+  personal_email: string | null;
 }
 
 /** The signed-in student's enrolment with both class groups resolved. */
 export async function studentEnrolment(supabase: Supabase, studentId: string): Promise<StudentEnrolment | null> {
-  const { data } = await supabase.from('students').select('status, roll_number, intake_session, enrollment_no, batch_id, secondary_batch_id').eq('id', studentId).maybeSingle();
+  const { data } = await supabase.from('students').select('status, roll_number, intake_session, enrollment_no, college_email, personal_email, batch_id, secondary_batch_id').eq('id', studentId).maybeSingle();
   const s = data as Row | null;
   if (!s) return null;
 
@@ -48,6 +52,8 @@ export async function studentEnrolment(supabase: Supabase, studentId: string): P
   return {
     status: s.status,
     roll_number: s.roll_number,
+    college_email: s.college_email,
+    personal_email: s.personal_email,
     intake_session: s.intake_session,
     enrollment_no: s.enrollment_no,
     primary,

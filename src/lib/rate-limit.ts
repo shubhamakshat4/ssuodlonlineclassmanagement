@@ -46,6 +46,10 @@ export const LIMITS = {
   loginEmail: { limit: 8, windowSeconds: 15 * 60 },
   /** recording playback starts per user */
   play: { limit: 60, windowSeconds: 60 },
+  /** security-question password resets per IP */
+  resetIp: { limit: 10, windowSeconds: 15 * 60 },
+  /** security-question answer attempts per email */
+  resetEmail: { limit: 5, windowSeconds: 15 * 60 },
 };
 
 export function clientIp(headers: Headers): string {

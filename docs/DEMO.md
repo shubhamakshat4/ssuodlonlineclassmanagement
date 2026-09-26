@@ -14,6 +14,9 @@ npm run dev       # http://localhost:3000   (or: npm run build && npx next start
 | Role | Email | Password |
 |---|---|---|
 | Admin | `odl.admin@srisriuniversity.edu.in` | see `E2E_ADMIN_PASSWORD` in `.env.local` |
+
+Students sign in with an email and password too (Google sign-in has been removed). A new student's
+first password is `srisri@26` and the portal makes them change it - see `docs/STUDENT_ACCOUNTS.md`.
 | Admin | `demo.admin@srisriuniversity.edu.in` | `DemoAdmin12345` |
 | Faculty | the 21 real faculty, e.g. `jharana.rani@srisriuniversity.edu.in` | **placeholder logins** — no password set until IT supplies real addresses (see `docs/BLOCKERS.md` B3) |
 | Student | their real `@srisriuniversity.edu.in` Google account | Google sign-in only, no password |

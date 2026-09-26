@@ -10,7 +10,7 @@ export interface LoginState {
   error?: string;
 }
 
-/** Teacher / admin email + password sign-in. Students never reach this (Google only). */
+/** Email + password sign-in for every role. */
 export async function signInWithPassword(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const email = String(formData.get('email') ?? '')
     .trim()
@@ -38,12 +38,6 @@ export async function signInWithPassword(_prev: LoginState, formData: FormData):
     await supabase.auth.signOut();
     return { error: 'This account is not active. Contact the ODL office.' };
   }
-  if (profile.role === 'student') {
-    // Students are Google-only. A student with a password should not exist; refuse anyway.
-    await supabase.auth.signOut();
-    return { error: 'Students sign in with their university Google account.' };
-  }
-
   if (data.user.app_metadata?.must_change_password === true) redirect('/account/password');
   redirect(next || ROLE_HOME[profile.role as Role]);
 }

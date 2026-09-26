@@ -38,6 +38,10 @@ export async function changePassword(_prev: PasswordState, formData: FormData): 
     await supabase.auth.refreshSession();
   }
 
+  // Somebody who has never set security questions cannot reset their own password later, so ask now.
+  const { count } = await createAdminClient().from('security_answers').select('user_id', { count: 'exact', head: true }).eq('user_id', user.id);
+  if (!count) redirect('/account/security-questions');
+
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
   redirect(profile ? ROLE_HOME[profile.role as Role] : '/');
 }

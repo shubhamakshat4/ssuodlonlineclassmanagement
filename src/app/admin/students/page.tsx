@@ -120,17 +120,19 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
                   <TR>
                     <TH>Roll no.</TH>
                     <TH>Name</TH>
-                    <TH>Email</TH>
+                    <TH>Signs in as</TH>
+                    <TH>College email</TH>
                     <TH>Class group</TH>
                     <TH>Second group</TH>
                     <TH>Status</TH>
+
                     <TH className="text-right">Edit</TH>
                   </TR>
                 </THead>
                 <TBody>
                   {rows.map((s) => (
                     <TR key={s.id}>
-                      <TD className="whitespace-nowrap font-mono">{s.roll_number}</TD>
+                      <TD className="whitespace-nowrap font-mono">{s.roll_number ?? <span className="text-muted-foreground">not issued</span>}</TD>
                       <TD className="whitespace-nowrap">
                         <Link href={`/admin/students/${s.id}`} className="font-medium text-primary hover:underline">
                           {s.profiles.full_name}
@@ -141,7 +143,8 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
                           </Badge>
                         ) : null}
                       </TD>
-                      <TD>{s.profiles.email}</TD>
+                      <TD className="font-mono text-xs">{s.profiles.email}</TD>
+                      <TD className="font-mono text-xs">{s.college_email ?? <span className="font-sans text-muted-foreground">not issued</span>}</TD>
                       <TD className="whitespace-nowrap font-mono">{batchById.get(s.batch_id)?.code ?? '—'}</TD>
                       <TD className="whitespace-nowrap font-mono">
                         {s.secondary_batch_id ? <Badge variant="info">{batchById.get(s.secondary_batch_id)?.code ?? '—'}</Badge> : <span className="text-muted-foreground">—</span>}
@@ -158,7 +161,7 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
                   ))}
                   {rows.length === 0 ? (
                     <TR>
-                      <TD colSpan={7} className="text-muted-foreground">
+                      <TD colSpan={8} className="text-muted-foreground">
                         No students match.
                       </TD>
                     </TR>
@@ -203,14 +206,17 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
               <Field label="Full name" htmlFor="full_name">
                 <Input id="full_name" name="full_name" required />
               </Field>
-              <Field label="University email" htmlFor="email" hint={`Must be @${appConfig.allowedStudentDomain}`}>
-                <Input id="email" name="email" type="email" required />
+              <Field label="College email" htmlFor="college_email" hint={`@${appConfig.allowedStudentDomain}, if one has been issued`}>
+                <Input id="college_email" name="college_email" type="email" />
+              </Field>
+              <Field label="Personal email" htmlFor="personal_email" hint="Used as the login when there is no college email">
+                <Input id="personal_email" name="personal_email" type="email" />
               </Field>
               <Field label="Phone" htmlFor="phone">
                 <Input id="phone" name="phone" />
               </Field>
-              <Field label="Roll number" htmlFor="roll_number">
-                <Input id="roll_number" name="roll_number" required className="font-mono uppercase" />
+              <Field label="Roll number" htmlFor="roll_number" hint="Optional until the university issues one">
+                <Input id="roll_number" name="roll_number" className="font-mono uppercase" />
               </Field>
               <Field label="Class group" htmlFor="batch_id">
                 <Select id="batch_id" name="batch_id" required defaultValue="">

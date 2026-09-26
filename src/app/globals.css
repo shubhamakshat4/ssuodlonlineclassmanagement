@@ -1,24 +1,28 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   SSU ODL design tokens. Warm, calm, academic: cream canvas, ink text, saffron
-   accent for actions, deep teal for "live" states. One palette for every role.
+   SSU ODL design tokens, taken from the university's own identity: the maroon
+   and gold of the Sri Sri University seal on a warm cream canvas, with a deep
+   teal reserved for "live" states. One palette for student, faculty and admin.
    --------------------------------------------------------------------------- */
 :root {
-  --background: #f7f5f0;
+  --background: #f8f6f1;
   --surface: #ffffff;
-  --surface-muted: #fbfaf7;
-  --foreground: #1b1f2a;
-  --muted: #efece5;
-  --muted-foreground: #6b7080;
-  --border: #e6e2d8;
-  --border-strong: #d6d0c2;
-  --primary: #c2410c;
-  --primary-hover: #a3360a;
-  --primary-soft: #fff1e8;
+  --surface-muted: #fbfaf6;
+  --foreground: #1e1a1a;
+  --muted: #f0ebe3;
+  --muted-foreground: #6f6760;
+  --border: #e7e0d5;
+  --border-strong: #d7cdbd;
+  --primary: #7b1f1f;
+  --primary-hover: #611717;
+  --primary-soft: #f8edea;
   --primary-foreground: #ffffff;
   --accent: #0f766e;
   --accent-soft: #e6f4f2;
+  /* the gold of the seal, for highlights rather than actions */
+  --gold: #b08340;
+  --gold-soft: #faf2e3;
   --destructive: #b91c1c;
   --destructive-soft: #fdecec;
   --success: #15803d;
@@ -27,7 +31,7 @@
   --warning-soft: #fff5e0;
   --info: #1d4ed8;
   --info-soft: #e8eefc;
-  --ring: rgba(194, 65, 12, 0.35);
+  --ring: rgba(123, 31, 31, 0.32);
   --shadow-sm: 0 1px 2px rgba(27, 31, 42, 0.05), 0 1px 1px rgba(27, 31, 42, 0.03);
   --shadow-md: 0 6px 18px -8px rgba(27, 31, 42, 0.18), 0 2px 6px -2px rgba(27, 31, 42, 0.06);
   --radius: 14px;
@@ -48,6 +52,8 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
   --color-destructive: var(--destructive);
   --color-destructive-soft: var(--destructive-soft);
   --color-success: var(--success);
@@ -128,9 +134,39 @@ input[type="time"] {
   animation: rise-in 0.35s ease-out both;
 }
 
+/* Landing page: each element lifts in behind the one before it (stagger via inline animation-delay). */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-up {
+  animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* A very slow drift across the campus photograph, so the hero is alive without being distracting. */
+@keyframes hero-pan {
+  from {
+    transform: scale(1.06) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.14) translate3d(-1.5%, -1%, 0);
+  }
+}
+.hero-pan {
+  animation: hero-pan 32s ease-in-out infinite alternate;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .live-dot,
-  .rise-in {
+  .rise-in,
+  .fade-up,
+  .hero-pan {
     animation: none;
   }
 }

@@ -47,7 +47,7 @@ Things that could not be finished in this build, what was tried, and exactly wha
   anything off-Sunday or any date whose class count differs from the workbook. Worth running after any
   bulk edit.
 
-## B6 - The admin portal password was published in a public repository
+## B6 - The admin portal password was published in a public repository - RESOLVED (25 Sep 2026)
 - **What:** `github.com/shubhamakshat4/ssuodlonlineclassmanagement` is publicly readable, and the repo
   carried `AdminPass12345` for `odl.admin@srisriuniversity.edu.in` in `e2e/helpers.ts`,
   `scripts/smoke-cloud.ts`, `README.md`, `docs/DEMO.md` and `supabase/seed.sql`. It was written as a
@@ -67,4 +67,33 @@ Things that could not be finished in this build, what was tried, and exactly wha
   is not a real mailbox. `supabase/seed.sql`
   still contains it as the password its own local fixture creates; that is fine once the live account no
   longer uses it.
+
+## B7 - The September 2026 changes are written but not yet on the live project
+Everything below is code and migrations that are committed and tested against a fresh database. None
+of it has been applied to the cloud project, because that needs a write to shared infrastructure.
+Run these in order, from the project folder:
+
+    npm run db:migrate                     # adds college_email / personal_email, nullable roll_number,
+                                           # the security-question tables, and the ODL-office-only sign-up rule
+    npm run auth:config -- --apply         # password minimum 12 -> 8 (srisri@26 is 9), Google provider off
+    npm run data:fix-emails                # dry run: shows every login it would correct
+    npm run data:fix-emails -- --apply     # replaces the 286 invented logins with the real addresses
+
+Then set the first-login password on the accounts that were created without one:
+
+    npm run auth:set-password -- <login email> 'srisri@26'
+
+Until `db:migrate` has run, the app will not show a student their classes: the code reads
+`students.college_email`, which does not exist on the live database yet. Three Playwright journeys fail
+for exactly this reason and pass again once the migration is applied.
+
+## B8 - Invented student identifiers are still on the live database
+- **What:** the first import generated an `@srisriuniversity.edu.in` login for the 286 August 2026
+  admissions (for example `sayed.tafazul.tmp-bba-aug2026-0352@srisriuniversity.edu.in`) and `TMP-...`
+  roll numbers for everyone without one. Those addresses do not exist and never did.
+- **Fixed in code:** nothing is generated any more. `college_email` and `personal_email` are stored
+  separately and left blank when the workbook is blank, `roll_number` is nullable, and the login is the
+  college address when there is one and the personal address otherwise - see `docs/STUDENT_ACCOUNTS.md`.
+- **Needs:** `npm run data:fix-emails -- --apply` (see B7), which reads the workbooks in `docs/` and
+  replaces each invented login with the student's real address.
 

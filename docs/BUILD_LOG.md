@@ -295,3 +295,32 @@ One entry per phase. Newest at the bottom.
   now waits for the login error (`data-testid="login-error"`) as well and fails in seconds, naming the env
   var to check and the script to run.
 
+## Real student emails, password sign-in, and the university's own identity (26 Sep 2026)
+- **No invented identifiers.** An audit of the ten workbooks showed the first import had generated an
+  `@srisriuniversity.edu.in` login for the 286 August 2026 admissions (the workbooks have no SSU Email Id
+  column at all for them) and `TMP-...` roll numbers. Migration `...20260926000100` splits the two real
+  columns apart - `students.college_email` and `students.personal_email`, either of them blank - and makes
+  `roll_number` nullable. The login is the college address when there is one, the personal address
+  otherwise, so all 637 students can sign in without anything being made up. `npm run data:fix-emails`
+  repairs the rows already loaded.
+- **Password sign-in for students.** Google sign-in is gone; `/login` serves every role. New students get
+  `STUDENT_DEFAULT_PASSWORD` (`srisri@26`) with `must_change_password`, and are then asked to choose two
+  security questions. The account-creation rule simplified accordingly: every account must carry the
+  `provisioned_by` stamp only the Admin API can set, so nobody can sign themselves up at any domain.
+- **Resets without email.** `/login/reset` verifies the security questions and sets a new password;
+  answers are bcrypt-hashed and compared inside the database, rate limited per IP and per address.
+  Supabase's built-in mailer cannot serve a 600-student cohort, so nothing depends on it.
+- **Admin control of passwords.** Admin -> Students -> Password sets one, as does
+  `npm run auth:set-password`. Passwords are deliberately *not* stored in readable form anywhere: Supabase
+  Auth keeps a one-way bcrypt hash, so a leaked database cannot hand anyone 637 working logins. Setting a
+  password gives the ODL office the same ability and leaves an audit row; storing plaintext would not.
+- **Policy** dropped to 8 characters (`srisri@26` is 9) in `password.ts`, `config.toml` and the project's
+  auth settings, which `npm run auth:config` now applies rather than leaving to the dashboard.
+- **Identity.** The real Sri Sri University logo, seal and a campus photograph now ship in `public/brand/`,
+  taken from the university's own site. The palette moved from saffron to the maroon and gold of the seal,
+  across all three portals. The landing page is the campus behind the name and two buttons - no feature
+  copy - and the sign-in, reset and password pages share the same frame.
+- **Tested**: lint, typecheck, 167 unit + RLS tests (7 new for security questions, 3 rewritten for the new
+  sign-up rule, 1 new for a student with no roll number and only a personal email), `next build`.
+  The Playwright journeys need the migration on the live project first - see BLOCKERS B7.
+

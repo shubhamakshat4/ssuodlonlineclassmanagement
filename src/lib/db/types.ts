@@ -55,7 +55,8 @@ export interface BatchSubject {
 
 export interface Student {
   id: string;
-  roll_number: string;
+  /** NULL until the university issues one */
+  roll_number: string | null;
   /** primary class group (programme + semester) */
   batch_id: string;
   /** optional second class group, e.g. a back semester being repeated */
@@ -63,6 +64,9 @@ export interface Student {
   status: StudentStatus;
   enrollment_no: string | null;
   intake_session: string | null;
+  /** @srisriuniversity.edu.in address, NULL until the university issues one */
+  college_email: string | null;
+  /** the student's own address */
   personal_email: string | null;
 }
 

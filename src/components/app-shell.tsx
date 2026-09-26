@@ -36,17 +36,14 @@ export function AppShell({ user, nav, children }: { user: CurrentUser; nav: NavI
                 <span className="block text-[11px] text-muted-foreground">{ROLE_LABEL[user.role]}</span>
               </span>
             </div>
-            {user.role !== 'student' ? (
-              // Students sign in with Google and have no portal password.
-              <Link
-                href="/account/password"
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground"
-              >
-                <KeyRound className="h-3.5 w-3.5" aria-hidden />
-                <span className="hidden sm:inline">Change password</span>
-                <span className="sm:hidden">Password</span>
-              </Link>
-            ) : null}
+            <Link
+              href="/account/password"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground"
+            >
+              <KeyRound className="h-3.5 w-3.5" aria-hidden />
+              <span className="hidden sm:inline">Change password</span>
+              <span className="sm:hidden">Password</span>
+            </Link>
             <form action="/auth/signout" method="post">
               <button
                 type="submit"
