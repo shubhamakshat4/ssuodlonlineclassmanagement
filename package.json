@@ -24,7 +24,8 @@
     "data:verify": "tsx scripts/verify-timetable.ts",
     "auth:set-password": "tsx scripts/set-password.ts",
     "data:fix-emails": "tsx scripts/fix-student-emails.ts",
-    "auth:config": "tsx scripts/auth-config.ts"
+    "auth:config": "tsx scripts/auth-config.ts",
+    "auth:first-passwords": "tsx scripts/set-first-passwords.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",

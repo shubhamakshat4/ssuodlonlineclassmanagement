@@ -112,3 +112,18 @@ All four commands were run against the live project and verified afterwards:
 
 Auth settings confirmed applied: password minimum 8, Google provider off, email sign-in on.
 
+## B9 - Nobody can sign in yet: 652 accounts have no password
+- **What:** students were originally created for Google sign-in, which meant no password at all. After the
+  move to password sign-in, 637 of the 638 students and 15 of the 21 teachers have an account but no
+  password, so they simply cannot sign in.
+- **Needs:** one command, which writes to the live project:
+
+      npm run auth:first-passwords              # dry run - counts who would be given one
+      npm run auth:first-passwords -- --apply   # sets srisri@26 on all 652
+
+  It only touches an account whose password is unset, so anyone who has already chosen their own keeps
+  it, and everyone it touches is asked to choose their own at first sign-in.
+- **Everything else is live:** the Vercel deployment is current, the migration is applied, and a student
+  signing in with either their college or their personal address was verified against the production site
+  on 28 Sep 2026.
+
