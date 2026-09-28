@@ -1,6 +1,7 @@
 /**
  * Put a faculty member's real Microsoft 365 address on their portal record.
  *
+ *   npm run faculty:microsoft -- --pending             who still has no Microsoft address
  *   npm run faculty:microsoft                          dry run
  *   npm run faculty:microsoft -- --apply               update the records
  *   npm run faculty:microsoft -- --apply --recreate    ...and rebuild their upcoming Teams meetings
@@ -15,12 +16,16 @@
  * read the link from the portal, so that is safe - but a link somebody copied out by hand will die.
  */
 import './_env';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { GraphEnv } from '../supabase/functions/_shared/graph/index.ts';
 
 const env = process.env as GraphEnv & NodeJS.ProcessEnv;
 const APPLY = process.argv.includes('--apply');
 const RECREATE = process.argv.includes('--recreate');
+const PENDING = process.argv.includes('--pending');
+
+/** A UPN we invented at import time, rather than one IT gave us. */
+const PLACEHOLDER = /@srisriuniversity\.onmicrosoft\.com$/i;
 
 /** employee_code -> the address IT confirmed. Add to this list as more arrive. */
 const MAPPING: { code: string; name: string; address: string }[] = [
@@ -69,11 +74,48 @@ async function resolve(t: string, address: string) {
   return { ok: true as const, id: u.id, displayName: u.displayName ?? '' };
 }
 
+interface PendingRow {
+  id: string;
+  employee_code: string;
+  entra_upn: string;
+  profiles: { full_name: string; email: string };
+}
+
+/** Who still has an invented UPN, worst first, so IT can see what each one is holding up. */
+async function listPending(admin: SupabaseClient) {
+  const { data } = await admin.from('teachers').select('id, employee_code, entra_upn, profiles!inner(full_name, email)').order('employee_code');
+  const teachers = ((data ?? []) as unknown as PendingRow[]).filter((t) => PLACEHOLDER.test(t.entra_upn));
+  const rows: { code: string; name: string; upcoming: number; groups: string }[] = [];
+  for (const t of teachers) {
+    const { data: sessions } = await admin
+      .from('v_class_sessions')
+      .select('batch_code')
+      .eq('teacher_id', t.id)
+      .eq('status', 'scheduled')
+      .gt('scheduled_start', new Date().toISOString());
+    const list = (sessions ?? []) as { batch_code: string }[];
+    rows.push({
+      code: t.employee_code,
+      name: t.profiles.full_name,
+      upcoming: list.length,
+      groups: [...new Set(list.map((s) => s.batch_code))].sort().join(', ') || '-',
+    });
+  }
+  rows.sort((a, b) => b.upcoming - a.upcoming || a.code.localeCompare(b.code));
+  const total = rows.reduce((n, r) => n + r.upcoming, 0);
+  console.log(`${rows.length} faculty still have no Microsoft 365 address, covering ${total} upcoming classes.\n`);
+  console.log('code | upcoming | name | class groups');
+  for (const r of rows) console.log(`${r.code} | ${String(r.upcoming).padStart(3)} | ${r.name} | ${r.groups}`);
+  console.log('\nAsk IT for a licensed account in the srisriuniversity.edu.in tenant for each, then add');
+  console.log('them to MAPPING in this script and run:  npm run faculty:microsoft -- --apply --recreate');
+}
+
 async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error('NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env.local');
   const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  if (PENDING) return listPending(admin);
   const t = await token();
 
   let updated = 0;
