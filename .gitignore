@@ -46,3 +46,6 @@ _shots/
 docs/*.xlsx
 docs/*.xls
 docs/*.csv
+
+# Demo decks carry live sign-in credentials and named students. This repository is public.
+docs/*.pptx
