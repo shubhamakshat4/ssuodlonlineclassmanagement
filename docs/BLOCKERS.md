@@ -15,7 +15,7 @@ Things that could not be finished in this build, what was tried, and exactly wha
 - **Demo caveat:** functions run with `GRAPH_MODE=mock`, so the provisioner assigns fake `teams.microsoft.com/…/mock/…` links to new sessions. Go-live: `supabase secrets set GRAPH_MODE=real MS_…`, `npm run demo:reset-links`.
 - **Rotate:** the database password, service-role key and CLI access token were all shared in chat. Rotate in the dashboard; update `.env.local` (`SUPABASE_DB_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ACCESS_TOKEN`).
 
-## B3 — Faculty Microsoft 365 addresses not yet supplied
+## B3 — Faculty Microsoft 365 addresses — PARTLY SUPPLIED (28 Sep 2026)
 - **What:** the 21 faculty from the timetable were created with placeholder logins (`first.last@srisriuniversity.edu.in`) and placeholder UPNs (`…@srisriuniversity.onmicrosoft.com`).
 - **Impact:** faculty cannot sign in until their real address is set, and Teams co-organiser assignment is nominal (the meeting is still created and students can join).
 - **Note:** those mailboxes do not exist, so an invite email never arrives. Set a password directly with
@@ -126,4 +126,34 @@ Auth settings confirmed applied: password minimum 8, Google provider off, email 
 - **Everything else is live:** the Vercel deployment is current, the migration is applied, and a student
   signing in with either their college or their personal address was verified against the production site
   on 28 Sep 2026.
+
+### B3 update (28 Sep 2026)
+Eight addresses arrived with Teams licences attached. Checked against the tenant with
+`npm run graph:check-users`:
+
+| Person | Address | Tenant says |
+|---|---|---|
+| Mr. Rushikesh Dattatray Joshi (F017) | rushikesh.j@srisriuniversity.edu.in | enabled, Teams licence |
+| Mr. Sankar Maharana (F018) | sankar.m@srisriuniversity.edu.in | enabled, Teams licence |
+| Mr. Harshvardhan Pandey (F016) | harshvardhan.p@srisriuniversity.edu.in | enabled, Teams licence |
+| Ms. Sasmita Panda (F020) | sasmita.dancer@gmail.com | **no such account in the tenant** |
+| Guru Ashis Kumar Das (F015) | guruashisdas@gmail.com | **no such account in the tenant** |
+| Ms. Shivangi Mitra (F021) | shivangimitra123@gmail.com | **no such account in the tenant** |
+| Mr. SK Abdul Wasim (staff) | abdul.w@srisriuniversity.edu.in | enabled, Teams licence |
+| Ms. Arpita Bose (staff) | arpita.b@srisriuniversity.edu.in | enabled, Teams licence |
+
+- **Apply the three that work:** `npm run faculty:microsoft -- --apply --recreate`. That sets each one's
+  sign-in address and entra_upn, resolves their Graph object id, and rebuilds their upcoming meetings so
+  the co-organiser actually takes effect. Covers 14 upcoming classes.
+- **Still needed:** university Microsoft accounts for Sasmita Panda, Ashis Kumar Das and Shivangi Mitra.
+  A Teams co-organiser must belong to the tenant, so a personal Gmail address cannot be used however it
+  is licensed. Between them they teach **53** of the 277 upcoming classes - the largest share, because
+  they carry the Odissi dance and performing arts groups.
+- **Note on rebuilding:** a session that already has a meeting is only ever *patched* by the provisioner,
+  and a patch changes the times, not the participants. Adding a co-organiser to an existing meeting means
+  rebuilding it, which issues a new join link. Students read the link from the portal so that is safe, but
+  a link somebody copied out by hand will stop working.
+- **Not faculty:** Mr. SK Abdul Wasim (Assistant Section Officer) and Ms. Arpita Bose (Admin Executive) are
+  office staff, not teaching staff. They have no portal account. Say the word and they can be added as ODL
+  office administrators.
 
