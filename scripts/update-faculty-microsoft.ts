@@ -28,13 +28,31 @@ const PENDING = process.argv.includes('--pending');
 const PLACEHOLDER = /@srisriuniversity\.onmicrosoft\.com$/i;
 
 /** employee_code -> the address IT confirmed. Add to this list as more arrive. */
-const MAPPING: { code: string; name: string; address: string }[] = [
+const MAPPING: { code: string; name: string; address: string; correctName?: string }[] = [
+  // 28 Sep 2026
+  { code: 'F016', name: 'Mr. Harshvardhan Pandey', address: 'harshvardhan.p@srisriuniversity.edu.in' },
   { code: 'F017', name: 'Mr. Rushikesh Dattatray Joshi', address: 'rushikesh.j@srisriuniversity.edu.in' },
   { code: 'F018', name: 'Mr. Sankar Maharana', address: 'sankar.m@srisriuniversity.edu.in' },
-  { code: 'F016', name: 'Mr. Harshvardhan Pandey', address: 'harshvardhan.p@srisriuniversity.edu.in' },
-  // Awaiting a university account - these three were given as personal gmail addresses, which the
-  // tenant does not know and which therefore cannot be named as co-organiser:
-  // F020 Ms. Sasmita Panda, F015 Guru Ashis Kumar Das, F021 Ms. Shivangi Mitra
+  // 5 Oct 2026. correctName is set where the timetable workbook spelled the name differently from the
+  // tenant; the tenant is the person's own account, so it wins.
+  { code: 'F003', name: 'Dr. Bhagirathi Nayak', address: 'bhagirathi.n@srisriuniversity.edu.in' },
+  { code: 'F011', name: 'Dr. Ravish Mathew', address: 'ravish.m@srisriuniversity.edu.in' },
+  { code: 'F013', name: 'Dr. Sabnoor Khatoon', address: 'sabnoor.k@srisriuniversity.edu.in' },
+  { code: 'F009', name: 'Dr. Pritidhara Hota', address: 'pritidhara.h@srisriuniversity.edu.in' },
+  { code: 'F005', name: 'Dr. Gayatri Rath', address: 'gayatri.r@srisriuniversity.edu.in' },
+  { code: 'F008', name: 'Dr. Praag Bhardwaj', address: 'praag.b@srisriuniversity.edu.in' },
+  { code: 'F001', name: 'Dr. Aradhana Panigrahi', address: 'aradhana.p@srisriuniversity.edu.in', correctName: 'Dr. Aradhana Panigrahi, Asst. Prof.' },
+  { code: 'F007', name: 'Dr. Jyoti Sharma', address: 'jyoti.s@srisriuniversity.edu.in' },
+  { code: 'F002', name: 'Dr. B. Maithili Dutta Pradhan', address: 'maithili.p@srisriuniversity.edu.in' },
+  { code: 'F014', name: 'Dr. Shwetasaibal Samanta Sahoo', address: 'shwetasaibal.s@srisriuniversity.edu.in', correctName: 'Dr. Shwetasaibal Samanta Sahoo, Asst. Prof.' },
+  { code: 'F012', name: 'Dr. Richa Baghel', address: 'richa.b@srisriuniversity.edu.in' },
+  { code: 'F004', name: 'Dr. Gagana D P', address: 'gagana.d@srisriuniversity.edu.in' },
+  { code: 'F006', name: 'Dr. Jharana Rani Tripathy', address: 'jharana.t@srisriuniversity.edu.in' },
+  { code: 'F010', name: 'Dr. Rajat Kumar Baliarsingh', address: 'rajat.b@srisriuniversity.edu.in', correctName: 'Dr. Rajat Kumar Baliarsingh, Asst. Prof.' },
+  // Still awaiting a university account:
+  //   F015 Guru Ashis Kumar Das, F020 Ms. Sasmita Panda, F021 Ms. Shivangi Mitra
+  //     - supplied as personal gmail addresses, which the tenant does not know
+  //   F019 Mr. Sunil Kumar Mishra - no address supplied yet
 ];
 
 async function token(): Promise<string> {
@@ -146,6 +164,9 @@ async function main() {
       console.log(`  ${m.code} ${teacher.profiles.full_name}`);
       console.log(`     login    ${teacher.profiles.email} -> ${m.address}`);
       console.log(`     upn      ${teacher.entra_upn} -> ${m.address} (${found.displayName})`);
+      if (m.correctName && m.correctName !== teacher.profiles.full_name) {
+        console.log(`     name     ${teacher.profiles.full_name} -> ${m.correctName}`);
+      }
       console.log(`     meetings ${count ?? 0} upcoming${RECREATE ? ' would be rebuilt with a new link' : ' left alone; pass --recreate to rebuild them'}`);
       continue;
     }
@@ -156,7 +177,9 @@ async function main() {
       console.log(`  FAILED ${m.code}: ${authError.message}`);
       continue;
     }
-    const { error: profileError } = await admin.from('profiles').update({ email: m.address }).eq('id', teacher.id);
+    const profilePatch: Record<string, string> = { email: m.address };
+    if (m.correctName && m.correctName !== teacher.profiles.full_name) profilePatch.full_name = m.correctName;
+    const { error: profileError } = await admin.from('profiles').update(profilePatch).eq('id', teacher.id);
     if (profileError) {
       console.log(`  FAILED ${m.code} (profile): ${profileError.message}`);
       continue;
