@@ -456,20 +456,41 @@ describe('service role', () => {
 
 describe('auth guards (accounts are created by the ODL office; class-group mapping decides what they see)', () => {
   it('rejects a sign-up the ODL office did not create, whatever the domain or provider', async () => {
+    // The hook is the gate, and it is what GoTrue actually calls. The trigger cannot be, because it
+    // runs before the Admin API has applied app_metadata - see the test below.
     for (const [email, meta] of [
       ['someone@gmail.com', '{"provider":"email","providers":["email"]}'],
       ['new.student@srisriuniversity.edu.in', '{"provider":"email","providers":["email"]}'],
       ['g@srisriuniversity.edu.in', '{"provider":"google","providers":["google"]}'],
     ]) {
-      const msg = await expectDenied(
-        db.sudo(
-          `insert into auth.users (id, email, raw_app_meta_data, created_at, updated_at)
-           values (gen_random_uuid(), $1, $2::jsonb, now(), now())`,
-          [email, meta],
-        ),
+      const [r] = await db.sudo<{ r: { error?: { http_code: number; message: string } } }>(
+        `select before_user_created_hook(jsonb_build_object('user', jsonb_build_object('email', $1::text, 'app_metadata', $2::jsonb))) as r`,
+        [email, meta],
       );
-      expect(msg, email).toMatch(/created by the ODL office/i);
+      expect(r.r.error?.http_code, email).toBe(403);
+      expect(r.r.error?.message, email).toMatch(/created by the ODL office/i);
     }
+  });
+
+  it('lets the Admin API create an account, which writes the row before it sets app_metadata', async () => {
+    // Reproduces the real failure: GoTrue inserts auth.users first and applies the caller's
+    // app_metadata afterwards, so a BEFORE INSERT trigger sees no provisioned_by stamp. A trigger that
+    // demanded one rejected every account the ODL office created - "Database error creating new user".
+    const [u] = await db.sudo<{ id: string }>(
+      `insert into auth.users (id, email, raw_app_meta_data, created_at, updated_at)
+       values (gen_random_uuid(), 'admin.api@srisriuniversity.edu.in', '{}'::jsonb, now(), now()) returning id`,
+    );
+    expect(u.id).toBeTruthy();
+    // ...and the stamp lands a moment later, as the Admin API does it
+    await db.sudo(`update auth.users set raw_app_meta_data = $2::jsonb where id = $1`, [
+      u.id,
+      '{"role":"teacher","provisioned_by":"admin","must_change_password":true}',
+    ]);
+    const [after] = await db.sudo<{ provisioned_by: string }>(
+      `select raw_app_meta_data->>'provisioned_by' as provisioned_by from auth.users where id = $1`,
+      [u.id],
+    );
+    expect(after.provisioned_by).toBe('admin');
   });
 
   it('an ODL-created student sees nothing until they are mapped, then sees their class group', async () => {
