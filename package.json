@@ -17,6 +17,7 @@
     "graph:check-users": "tsx scripts/graph-check-users.ts",
     "faculty:microsoft": "tsx scripts/update-faculty-microsoft.ts",
     "accounts:test": "tsx scripts/add-test-accounts.ts",
+    "accounts:make-teacher": "tsx scripts/make-teacher.ts",
     "ci": "npm run lint && npm run typecheck && npm test",
     "db:migrate": "tsx scripts/db-migrate.ts",
     "db:ping": "tsx scripts/db-ping.ts",
