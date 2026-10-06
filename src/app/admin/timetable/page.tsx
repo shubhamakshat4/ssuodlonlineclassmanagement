@@ -153,6 +153,17 @@ export default async function TimetablePage({ searchParams }: { searchParams: Pr
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Seven empty columns read as a broken page. When there are none, say so once. */}
+            {slots.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border-strong bg-surface-muted p-5 text-sm">
+                <p className="font-medium text-foreground">No weekly recurring slots for {batch.code} — and none are needed.</p>
+                <p className="mt-1.5 max-w-3xl text-muted-foreground">
+                  This term&apos;s ODL timetable is a dated one: a different subject each Sunday, so every class is scheduled individually. They are all listed
+                  above. Recurring slots are for a group that really does have the same class at the same hour every week; add one below and the nightly job will
+                  generate its classes 21 days ahead.
+                </p>
+              </div>
+            ) : (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-7">
               {DAY_ORDER.map((d) => (
                 <div key={d} className="rounded-lg border border-border bg-surface-muted p-2">
@@ -175,6 +186,7 @@ export default async function TimetablePage({ searchParams }: { searchParams: Pr
                 </div>
               ))}
             </div>
+            )}
           </CardContent>
         </Card>
 
