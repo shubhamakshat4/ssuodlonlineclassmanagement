@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ActionForm } from '@/components/action-form';
 import { Badge, Card, CardContent, CardHeader, CardTitle, PageHeader, Table, TBody, TD, TH, THead, TR } from '@/components/ui/primitives';
+import { buttonVariants } from '@/components/ui/button';
 import { CsvImportCard } from '@/components/csv-import-card';
 import { createClient } from '@/lib/supabase/server';
 import type { Batch, Program } from '@/lib/db/types';
@@ -28,7 +29,13 @@ export default async function BatchesPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Administration" title="Class groups" description="A programme and semester that shares a timetable, e.g. BBA - Semester 1. Students follow one group, and may follow a second one (a semester they are catching up on)." />
+      <PageHeader eyebrow="Administration" title="Class groups" description="A programme and semester that shares a timetable, e.g. BBA - Semester 1. Students follow one group, and may follow a second one (a semester they are catching up on)."
+        actions={
+          <a href="#new" className={buttonVariants({ variant: 'default', size: 'sm' })}>
+            + Add class group
+          </a>
+        }
+      />
       <div className="grid gap-6">
         <Card>
           <CardContent className="pt-5">
@@ -69,7 +76,7 @@ export default async function BatchesPage() {
             </Table>
           </CardContent>
         </Card>
-        <Card>
+        <Card id="new" className="scroll-mt-24">
           <CardHeader>
             <CardTitle>New class group</CardTitle>
           </CardHeader>

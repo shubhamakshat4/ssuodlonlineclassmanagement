@@ -1,11 +1,16 @@
 /**
  * Job: harvest Teams cloud recordings for completed sessions (SPEC §7.4).
  *
- * Primary path:  GET /onlineMeetings/{id}/recordings → metadata; the file itself is located in the
- *                service account's OneDrive /Recordings folder (matched by time window + subject).
- * Fallback path: folder scan only (session window + subject in file name). Used when the primary
- *                returns nothing 6 h after the class, when the session has no meeting id, or when
- *                GRAPH_RECORDING_MODE=manual (tenant rejected recordAutomatically).
+ * Primary path:  GET /onlineMeetings/{id}/recordings → metadata. Graph returns a recordingContentUrl,
+ *                and sometimes a OneDrive item. Either is enough to save the recording; the drive item
+ *                is preferred when present because it yields a short-lived direct download URL.
+ * Fallback path: scan the service account's OneDrive /Recordings folder (session window + subject in
+ *                the file name). Used when the primary gives nothing 6 h after the class, when the
+ *                session has no meeting id, or when GRAPH_RECORDING_MODE=manual.
+ *
+ * The fallback is genuinely optional: a service account with no OneDrive answers it with
+ * "ResourceNotFound: User's mysite not found", which is a fact about the tenant and not a failure of
+ * this run - so it is noted once and the session is left pending rather than erroring every hour.
  *
  * Inserts recordings rows with expires_at = recorded_at + retention days. Never copies the file.
  */
@@ -71,8 +76,26 @@ export async function runHarvestRecordings(db: DbClient, graph: GraphClient, opt
   summary.checked = sessions.length;
   if (sessions.length === 0) return summary;
 
+  // Loaded at most once per run, and at most once ever if the tenant has no OneDrive to scan.
   let folder: DriveItem[] | null = null;
-  const loadFolder = async () => (folder ??= await graph.listRecordingsFolder('harvest'));
+  let folderUnavailable: string | null = null;
+  const loadFolder = async (): Promise<DriveItem[]> => {
+    if (folder) return folder;
+    if (folderUnavailable) return [];
+    try {
+      folder = await graph.listRecordingsFolder('harvest');
+      return folder;
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      // No OneDrive on the service account is a tenant fact, not a run failure.
+      if (/mysite not found|ResourceNotFound/i.test(message)) {
+        folderUnavailable = message;
+        await audit(db, 'recording.folder_unavailable', 'recordings', null, { error: message });
+        return [];
+      }
+      throw e;
+    }
+  };
 
   for (const s of sessions) {
     try {
@@ -86,37 +109,47 @@ export async function runHarvestRecordings(db: DbClient, graph: GraphClient, opt
           recording = recs.slice().sort((a, b) => a.createdDateTime.localeCompare(b.createdDateTime))[0];
           if (recording.driveId && recording.driveItemId) {
             item = { driveId: recording.driveId, itemId: recording.driveItemId, name: '', createdDateTime: recording.createdDateTime, sizeBytes: recording.sizeBytes, durationSeconds: recording.durationSeconds };
-          } else {
+          } else if (!recording.contentUrl) {
+            // Neither pointer: the file may still be findable in the folder, if there is one.
             item = matchDriveItem(s, await loadFolder(), recording.createdDateTime);
           }
         }
       }
 
-      if (!item && (opts.manualRecordingMode || !s.graph_online_meeting_id || endedAgo >= fallbackAfterMs)) {
+      // A content URL is enough on its own - it is all Graph returns when the service account has no
+      // OneDrive, which is the case here.
+      const playable = item || recording?.contentUrl;
+
+      if (!playable && (opts.manualRecordingMode || !s.graph_online_meeting_id || endedAgo >= fallbackAfterMs)) {
         item = matchDriveItem(s, await loadFolder());
       }
 
-      if (!item) {
+      if (!item && !recording?.contentUrl) {
         summary.pending++;
         continue;
       }
 
-      const recordedAt = recording?.createdDateTime ?? item.createdDateTime;
+      const recordedAt = recording?.createdDateTime ?? item!.createdDateTime;
       const row = {
         class_session_id: s.id,
-        graph_recording_id: recording?.id ?? `drive:${item.itemId}`,
-        drive_id: item.driveId,
-        drive_item_id: item.itemId,
+        graph_recording_id: recording?.id ?? `drive:${item!.itemId}`,
+        drive_id: item?.driveId ?? null,
+        drive_item_id: item?.itemId ?? null,
+        content_url: recording?.contentUrl ?? null,
         recorded_at: recordedAt,
-        duration_seconds: item.durationSeconds ?? recording?.durationSeconds ?? null,
-        size_bytes: item.sizeBytes ?? recording?.sizeBytes ?? null,
+        duration_seconds: item?.durationSeconds ?? recording?.durationSeconds ?? null,
+        size_bytes: item?.sizeBytes ?? recording?.sizeBytes ?? null,
         expires_at: recordingExpiresAt(recordedAt, retentionDays).toISOString(),
         status: 'available',
       };
       const res = await db.from('recordings').upsert(row, { onConflict: 'class_session_id,graph_recording_id', ignoreDuplicates: true }).select('id');
       if (res.error) throw new Error(res.error.message);
       summary.harvested++;
-      await audit(db, 'recording.harvested', 'class_sessions', s.id, { path: recording ? 'primary' : 'fallback', drive_item_id: item.itemId, expires_at: row.expires_at });
+      await audit(db, 'recording.harvested', 'class_sessions', s.id, {
+        path: recording ? (item ? 'primary+drive' : 'primary+content_url') : 'fallback',
+        drive_item_id: item?.itemId ?? null,
+        expires_at: row.expires_at,
+      });
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       summary.errors.push({ sessionId: s.id, error: message });

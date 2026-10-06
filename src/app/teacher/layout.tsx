@@ -1,7 +1,12 @@
 import { AppShell, type NavItem } from '@/components/app-shell';
 import { requireRole } from '@/lib/auth/session';
 
-const NAV: NavItem[] = [{ href: '/teacher', label: 'Today' }, { href: '/teacher/timetable', label: 'Timetable' }, { href: '/teacher/upcoming', label: 'Upcoming' }];
+const NAV: NavItem[] = [
+  { href: '/teacher', label: 'Today' },
+  { href: '/teacher/timetable', label: 'Timetable' },
+  { href: '/teacher/upcoming', label: 'Upcoming' },
+  { href: '/teacher/recordings', label: 'Recordings' },
+];
 
 export default async function TeacherLayout({ children }: { children: React.ReactNode }) {
   const user = await requireRole('teacher');

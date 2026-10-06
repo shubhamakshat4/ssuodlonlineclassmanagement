@@ -52,7 +52,13 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <PageHeader eyebrow="Administration" title="Students" description={`Any @${appConfig.allowedStudentDomain} Google account can sign in; a student only sees classes once mapped to a class group here.`} />
+      <PageHeader eyebrow="Administration" title="Students" description="Add one student with the form, or many at once from a CSV. A student only sees classes once they are mapped to a class group."
+        actions={
+          <a href="#new" className={buttonVariants({ variant: 'default', size: 'sm' })}>
+            + Add student
+          </a>
+        }
+      />
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="grid gap-6">
           {unmapped.length ? (
@@ -196,7 +202,7 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
           <CsvImportCard entity="students" />
         </div>
 
-        <Card className="self-start">
+        <Card id="new" className="self-start scroll-mt-24">
           <CardHeader>
             <CardTitle>New student</CardTitle>
             <CardDescription>Creates the account; the student signs in with Google.</CardDescription>

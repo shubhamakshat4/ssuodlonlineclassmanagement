@@ -83,6 +83,47 @@ describe('runHarvestRecordings', () => {
     expect(audits).toContain('recording.harvested');
   });
 
+  it('saves a recording from the content URL alone, when Graph gives no drive item', async () => {
+    // What this tenant actually returns: a recordingContentUrl and nothing else, because the service
+    // account has no OneDrive. Before, the harvester insisted on a drive item and saved nothing.
+    const graph = new MockGraphClient();
+    graph.meetings.set('mock-meeting-1', { id: 'mock-meeting-1', joinUrl: 'u', options: null, recordings: [] });
+    graph.addRecording('mock-meeting-1', {
+      id: 'rec-1',
+      createdDateTime: '2026-09-14T05:31:30.000Z',
+      endDateTime: '2026-09-14T06:21:30.000Z',
+      contentUrl: 'https://graph.microsoft.com/v1.0/users/sa/onlineMeetings/m/recordings/rec-1/content',
+      durationSeconds: 3000,
+    });
+    const { db, inserted, audits } = fakeDb([session()]);
+    const summary = await runHarvestRecordings(db, graph, { now: new Date('2026-09-14T06:30:00Z') });
+    expect(summary).toMatchObject({ checked: 1, harvested: 1, pending: 0 });
+    expect(inserted[0]).toMatchObject({
+      class_session_id: 'sess-1',
+      graph_recording_id: 'rec-1',
+      drive_id: null,
+      drive_item_id: null,
+      content_url: 'https://graph.microsoft.com/v1.0/users/sa/onlineMeetings/m/recordings/rec-1/content',
+      recorded_at: '2026-09-14T05:31:30.000Z',
+      expires_at: '2026-10-14T05:31:30.000Z',
+      duration_seconds: 3000,
+      status: 'available',
+    });
+    expect(audits).toContain('recording.harvested');
+  });
+
+  it('a service account with no OneDrive leaves the session pending instead of failing every run', async () => {
+    // "ResourceNotFound: User's mysite not found" is a fact about the tenant, not a failure of the run.
+    const graph = new MockGraphClient();
+    graph.meetings.set('mock-meeting-1', { id: 'mock-meeting-1', joinUrl: 'u', options: null, recordings: [] });
+    graph.failNext('GET /users/{sa}/drive/root:/Recordings:/children', new Error("Graph 404 ResourceNotFound: User's mysite not found."));
+    const { db, audits } = fakeDb([session()]);
+    const summary = await runHarvestRecordings(db, graph, { now: new Date('2026-09-15T06:30:00Z') });
+    expect(summary).toMatchObject({ checked: 1, harvested: 0, pending: 1 });
+    expect(summary.errors).toHaveLength(0);
+    expect(audits).toContain('recording.folder_unavailable');
+  });
+
   it('waits for the primary path (pending) and only scans the folder after 6 h', async () => {
     const graph = new MockGraphClient();
     graph.meetings.set('mock-meeting-1', { id: 'mock-meeting-1', joinUrl: 'u', options: null, recordings: [] });

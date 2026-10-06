@@ -5,8 +5,10 @@
  *   2. authorise by reading `recordings` AS THE CALLER: the RLS policy already encodes
  *      "active student enrolled in the batch_subject and now() < expires_at, or the session's
  *      teacher, or an admin" — one source of truth, no duplicated rules
- *   3. resolve the OneDrive item with the app token and 302 to @microsoft.graph.downloadUrl
- *      (short-lived, supports range requests, never stored or cached)
+ *   3. hand back the bytes. A OneDrive item becomes a 302 to @microsoft.graph.downloadUrl
+ *      (short-lived, range-capable, never stored). When Graph gave only a recordingContentUrl - which
+ *      is all it returns when the service account has no OneDrive - the bytes are streamed through
+ *      here instead, because that URL needs the application token the browser must never see.
  *   4. log the playback
  */
 import { anonClientForRequest, errorResponse, json, serviceClient } from '../_shared/deno/runtime.ts';
@@ -32,7 +34,7 @@ Deno.serve(async (req) => {
     // Authorisation = visibility under RLS (student enrolled & not expired / teacher / admin).
     const { data: rec, error } = await userClient
       .from('recordings')
-      .select('id, drive_id, drive_item_id, status, expires_at')
+      .select('id, drive_id, drive_item_id, content_url, status, expires_at')
       .eq('class_session_id', sessionId)
       .eq('status', 'available')
       .order('recorded_at', { ascending: true })
@@ -41,21 +43,40 @@ Deno.serve(async (req) => {
     if (error) return json({ error: error.message }, 500);
     if (!rec) return json({ error: 'No recording available for this class, or it has expired.' }, 404);
     if (new Date(rec.expires_at).getTime() <= Date.now()) return json({ error: 'This recording has expired.' }, 410);
-    if (!rec.drive_id || !rec.drive_item_id) return json({ error: 'Recording file not resolved yet.' }, 409);
+    if (!rec.drive_id && !rec.content_url) return json({ error: 'Recording file not resolved yet.' }, 409);
 
     const db = serviceClient();
     const graph = createGraphClient(Deno.env.toObject(), { onCall: graphAuditHook(db) });
-    let downloadUrl: string;
-    try {
-      downloadUrl = await graph.getDownloadUrl(rec.drive_id, rec.drive_item_id, sessionId);
-    } catch (e) {
-      if (e instanceof GraphError && e.status === 404) return json({ error: 'The recording file is no longer available.' }, 410);
-      throw e;
-    }
 
     await userClient.rpc('log_audit', { p_action: 'recording.played', p_entity: 'recordings', p_entity_id: rec.id, p_payload: { session_id: sessionId, user_id: user.id } });
 
-    return new Response(null, { status: 302, headers: { Location: downloadUrl, 'Cache-Control': 'no-store' } });
+    // Preferred: a drive item, which the browser can fetch directly.
+    if (rec.drive_id && rec.drive_item_id) {
+      try {
+        const downloadUrl = await graph.getDownloadUrl(rec.drive_id, rec.drive_item_id, sessionId);
+        return new Response(null, { status: 302, headers: { Location: downloadUrl, 'Cache-Control': 'no-store' } });
+      } catch (e) {
+        if (e instanceof GraphError && e.status === 404) return json({ error: 'The recording file is no longer available.' }, 410);
+        throw e;
+      }
+    }
+
+    // Otherwise stream it, passing the Range header through so the player can seek.
+    try {
+      const upstream = await graph.streamContent(rec.content_url as string, req.headers.get('range'), sessionId);
+      const headers = new Headers({ 'Cache-Control': 'no-store', 'Accept-Ranges': 'bytes' });
+      for (const h of ['content-type', 'content-length', 'content-range']) {
+        const v = upstream.headers.get(h);
+        if (v) headers.set(h, v);
+      }
+      if (!headers.has('content-type')) headers.set('content-type', 'video/mp4');
+      return new Response(upstream.body, { status: upstream.status, headers });
+    } catch (e) {
+      if (e instanceof GraphError && (e.status === 404 || e.status === 410)) {
+        return json({ error: 'The recording file is no longer available.' }, 410);
+      }
+      throw e;
+    }
   } catch (e) {
     return errorResponse(e);
   }

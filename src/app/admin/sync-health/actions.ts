@@ -2,38 +2,75 @@
 
 import { z } from 'zod';
 import { ActionError, audit, formAction, must } from '@/lib/actions';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { createGraphClient, type GraphEnv } from '@shared/graph/index.ts';
-import { graphAuditHook } from '@shared/graph/audit.ts';
-import { runProvisionMeetings } from '@shared/jobs/provision-meetings.ts';
+import { serverEnv } from '@/lib/env';
 
 const REVALIDATE = ['/admin/sync-health', '/admin/sessions', '/admin'];
 
 /**
- * Runs the provisioner in-process on the Next.js server (service role, server-side only — never
- * from the browser). Requires GRAPH_MODE to be set explicitly so production can never run on the mock
- * by accident.
+ * Runs the provisioner by calling the deployed Edge Function, and waits for its summary.
+ *
+ * It used to run the job in-process on the Next.js server instead. That quietly broke two things: the
+ * Microsoft credentials live in Supabase's function secrets, not in the web host's environment, so the
+ * button ran on the mock client and handed out teams.microsoft.com/.../mock/... links; and it put Graph
+ * calls on a user request path, which this project deliberately does not do (see CLAUDE.md - every
+ * Graph call belongs in an Edge Function). Calling the function fixes both: one place holds the
+ * credentials, and this button and the ten-minute cron run exactly the same code.
  */
 export const runProvisionerNow = formAction({ roles: ['admin'], schema: z.object({}), revalidate: REVALIDATE }, async (_input, { supabase }) => {
-  const mode = process.env.GRAPH_MODE;
-  if (!mode) throw new ActionError('GRAPH_MODE is not set on the server (real|mock). Set it in .env.local / hosting env before running the provisioner from here.');
-  const admin = createAdminClient();
-  const graph = createGraphClient(process.env as GraphEnv, { onCall: graphAuditHook(admin) });
-  const summary = await runProvisionMeetings(admin, graph, {
-    limit: 20,
-    recordAutomatically: (process.env.GRAPH_RECORDING_MODE ?? 'auto').toLowerCase() !== 'manual',
-  });
-  await audit(supabase, 'provisioner.run_now', 'class_sessions', null, { ...summary, graphMode: graph.mode });
-  const errs = summary.errors.length ? ` Errors: ${summary.errors.map((e) => e.error).slice(0, 3).join(' | ')}` : '';
+  const summary = await callEdgeFunction('cron-provision-meetings');
+  await audit(supabase, 'provisioner.run_now', 'class_sessions', null, summary);
+  const s = summary as { claimed?: number; provisioned?: number; patched?: number; failed?: number; deleted?: number; recovered?: number; errors?: { error: string }[] };
+  const errs = s.errors?.length ? ` Errors: ${s.errors.slice(0, 3).map((e) => e.error).join(' | ')}` : '';
   return {
-    message: `Provisioner (${graph.mode}): claimed ${summary.claimed}, provisioned ${summary.provisioned}, patched ${summary.patched}, failed ${summary.failed}, events deleted ${summary.deleted}, recovered ${summary.recovered}.${errs}`,
+    message: `Provisioner: claimed ${s.claimed ?? 0}, provisioned ${s.provisioned ?? 0}, patched ${s.patched ?? 0}, failed ${s.failed ?? 0}, events deleted ${s.deleted ?? 0}, recovered ${s.recovered ?? 0}.${errs}`,
   };
 });
 
+/** Harvest recordings for classes that have finished, without waiting for the hourly job. */
+export const runHarvesterNow = formAction({ roles: ['admin'], schema: z.object({}), revalidate: [...REVALIDATE, '/admin/report'] }, async (_input, { supabase }) => {
+  const summary = await callEdgeFunction('cron-harvest-recordings');
+  await audit(supabase, 'harvester.run_now', 'recordings', null, summary);
+  const s = summary as { checked?: number; harvested?: number; pending?: number; errors?: { error: string }[] };
+  const errs = s.errors?.length ? ` Errors: ${s.errors.slice(0, 3).map((e) => e.error).join(' | ')}` : '';
+  return { message: `Recordings: checked ${s.checked ?? 0}, harvested ${s.harvested ?? 0}, still pending ${s.pending ?? 0}.${errs}` };
+});
+
+/**
+ * The function accepts the cron secret or the service-role key as a bearer token (requireServiceRole).
+ * Both are server-only; neither is ever sent to a browser.
+ */
+async function callEdgeFunction(name: string): Promise<Record<string, unknown>> {
+  const { supabaseUrl, supabaseServiceRoleKey } = serverEnv();
+  const token = process.env.CRON_SECRET?.trim() || supabaseServiceRoleKey;
+  const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: '{}',
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    if (res.status === 401) {
+      throw new ActionError(`${name} rejected the call (401). Set CRON_SECRET on this server to the same value as the function's secret.`);
+    }
+    throw new ActionError(`${name} failed (${res.status}): ${text.slice(0, 300)}`);
+  }
+  try {
+    return JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    return { raw: text.slice(0, 300) };
+  }
+}
+
 export const retryAllFailed = formAction({ roles: ['admin'], schema: z.object({}), revalidate: REVALIDATE }, async (_input, { supabase }) => {
   const rows = must<{ id: string }[]>(
-    await supabase.from('class_sessions').update({ sync_status: 'pending', sync_attempts: 0, sync_error: null }).eq('sync_status', 'failed').eq('status', 'scheduled').gt('scheduled_end', new Date().toISOString()).select('id'),
+    await supabase
+      .from('class_sessions')
+      .update({ sync_status: 'pending', sync_attempts: 0, sync_error: null })
+      .eq('sync_status', 'failed')
+      .eq('status', 'scheduled')
+      .gt('scheduled_end', new Date().toISOString())
+      .select('id'),
   );
-  await audit(supabase, 'session.retry_all_failed', 'class_sessions', null, { count: rows.length });
-  return { message: `${rows.length} session(s) re-queued.` };
+  await audit(supabase, 'sessions.retry_all_failed', 'class_sessions', null, { count: rows.length });
+  return { message: `${rows.length} session(s) re-queued. The provisioner picks them up within 10 minutes, or press "Run provisioner now".` };
 });

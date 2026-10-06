@@ -25,7 +25,13 @@ export default async function TeachersPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Administration" title="Teachers" description="Faculty accounts. Teachers sign in with email + password and are added to Teams meetings as co-organiser." />
+      <PageHeader eyebrow="Administration" title="Teachers" description="Faculty accounts. Teachers sign in with email + password and are added to Teams meetings as co-organiser."
+        actions={
+          <a href="#new" className={buttonVariants({ variant: 'default', size: 'sm' })}>
+            + Add faculty
+          </a>
+        }
+      />
       <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
         <Card>
           <CardContent className="pt-5">
@@ -70,7 +76,7 @@ export default async function TeachersPage() {
             </Table>
           </CardContent>
         </Card>
-        <Card className="self-start">
+        <Card id="new" className="self-start scroll-mt-24">
           <CardHeader>
             <CardTitle>New teacher</CardTitle>
             <CardDescription>Sends an invite email; the teacher sets a password on first sign-in.</CardDescription>

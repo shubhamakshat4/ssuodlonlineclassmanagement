@@ -41,6 +41,7 @@ export interface MockMeeting {
 export class MockGraphClient implements GraphClient {
   readonly mode = 'mock' as const;
   failure: MockFailure = 'none';
+  private readonly endpointFailures = new Map<string, Error>();
   events = new Map<string, MockEvent>();
   meetings = new Map<string, MockMeeting>();
   users = new Map<string, string>(); // upn -> object id
@@ -58,6 +59,14 @@ export class MockGraphClient implements GraphClient {
   }
 
   private async maybeFail(endpoint: string, correlationId?: string) {
+    // A failure aimed at one endpoint, for the tenant quirks that are not global failure modes -
+    // a service account with no OneDrive, say.
+    const targeted = this.endpointFailures.get(endpoint);
+    if (targeted) {
+      this.endpointFailures.delete(endpoint);
+      await this.log(endpoint, 404, correlationId, targeted.message);
+      throw targeted;
+    }
     if (this.failure === 'access-policy-403') {
       await this.log(endpoint, 403, correlationId, 'Forbidden');
       throw new GraphError('Graph 403 Forbidden: Application access policy not granted for the service account', 403, 'Forbidden', `mock-req-${this.seq}`, endpoint);
@@ -177,6 +186,16 @@ export class MockGraphClient implements GraphClient {
     return this.driveItems;
   }
 
+  async streamContent(contentUrl: string, range?: string | null, correlationId?: string): Promise<Response> {
+    const endpoint = 'GET /users/{sa}/onlineMeetings/{id}/recordings/{id}/content';
+    await this.maybeFail(endpoint, correlationId);
+    await this.log(endpoint, range ? 206 : 200, correlationId);
+    return new Response('mock recording bytes', {
+      status: range ? 206 : 200,
+      headers: { 'Content-Type': 'video/mp4', 'Accept-Ranges': 'bytes', ...(range ? { 'Content-Range': 'bytes 0-19/20' } : {}) },
+    });
+  }
+
   async getDownloadUrl(driveId: string, itemId: string, correlationId?: string): Promise<string> {
     const endpoint = 'GET /drives/{id}/items/{id}';
     await this.maybeFail(endpoint, correlationId);
@@ -193,7 +212,11 @@ export class MockGraphClient implements GraphClient {
   addRecording(meetingId: string, rec: Partial<GraphRecording> & { id: string; createdDateTime: string }) {
     const m = this.meetings.get(meetingId);
     if (!m) throw new Error(`no meeting ${meetingId}`);
-    m.recordings.push({ contentUrl: null, driveId: null, driveItemId: null, durationSeconds: null, sizeBytes: null, ...rec });
+    m.recordings.push({ endDateTime: null, contentUrl: null, driveId: null, driveItemId: null, durationSeconds: null, sizeBytes: null, ...rec });
+  }
+  /** Make the next call to one endpoint throw. */
+  failNext(endpoint: string, error: Error) {
+    this.endpointFailures.set(endpoint, error);
   }
   addDriveItem(item: DriveItem) {
     this.driveItems.push(item);

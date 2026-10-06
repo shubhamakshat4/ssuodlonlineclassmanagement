@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ActionForm } from '@/components/action-form';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Field, Input, PageHeader, Select } from '@/components/ui/primitives';
+import { formatIstDate, formatIstTime } from '@/lib/domain/time';
 import { CsvImportCard } from '@/components/csv-import-card';
 import { createClient } from '@/lib/supabase/server';
 import type { Batch, BatchSubject, Profile, Subject, SubjectTeacher, TimetableSlot } from '@/lib/db/types';
@@ -41,6 +42,30 @@ export default async function TimetablePage({ searchParams }: { searchParams: Pr
   const teachers = (teachersData ?? []) as Profile[];
   const teacherById = new Map(teachers.map((t) => [t.id, t]));
   const slots = (slotsData ?? []) as TimetableSlot[];
+
+  // The timetable this term is dated, not weekly-recurring: the ODL workbook schedules a different
+  // subject each Sunday, so the import created class_sessions directly and there are no slots to show.
+  // Listing the actual classes is the only honest answer to "where is my timetable?".
+  const { data: plannedData } = await supabase
+    .from('v_class_sessions')
+    .select('id, scheduled_start, scheduled_end, status, subject_name, teacher_name, topic')
+    .eq('batch_id', batch.id)
+    .order('scheduled_start');
+  const planned = (plannedData ?? []) as {
+    id: string;
+    scheduled_start: string;
+    scheduled_end: string;
+    status: string;
+    subject_name: string;
+    teacher_name: string | null;
+    topic: string | null;
+  }[];
+  const now = Date.now();
+  const byDate = new Map<string, typeof planned>();
+  for (const c of planned) {
+    const day = formatIstDate(c.scheduled_start);
+    byDate.set(day, [...(byDate.get(day) ?? []), c]);
+  }
   const bsById = new Map(batchSubjects.map((bs) => [bs.id, bs]));
   const assignments = (assignData ?? []) as SubjectTeacher[];
   const primaryTeacherForBs = (bsId: string) => assignments.find((a) => a.batch_subject_id === bsId && a.is_primary)?.teacher_id ?? assignments.find((a) => a.batch_subject_id === bsId)?.teacher_id;
@@ -54,7 +79,7 @@ export default async function TimetablePage({ searchParams }: { searchParams: Pr
     <>
       <PageHeader
         title="Timetable builder"
-        description="Weekly recurring slots per class group. The nightly job expands them into sessions 21 days ahead, skipping holidays. Clashes (same teacher or same batch) are rejected."
+        description="The classes scheduled for a class group, and the weekly recurring slots that generate new ones."
         actions={
           <form method="get" className="flex items-center gap-2">
             <Select name="batch" defaultValue={batch.id} className="w-56">
@@ -75,8 +100,57 @@ export default async function TimetablePage({ searchParams }: { searchParams: Pr
         <Card>
           <CardHeader>
             <CardTitle>
-              {batch.code} — week view <span className="font-normal text-muted-foreground">(semester {batch.current_semester})</span>
+              {batch.code} — scheduled classes <span className="font-normal text-muted-foreground">({planned.length} this term)</span>
             </CardTitle>
+            <CardDescription>
+              Every class on the calendar for this group. This term&apos;s ODL timetable is dated rather than weekly-recurring — a different subject each Sunday —
+              so these are the classes themselves, not a repeating pattern. Change one on the{' '}
+              <Link href="/admin/sessions" className="font-medium text-primary hover:underline">
+                Sessions
+              </Link>{' '}
+              page.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {planned.length === 0 ? <EmptyState>No classes scheduled for {batch.code}.</EmptyState> : null}
+            <div className="grid gap-3">
+              {[...byDate.entries()].map(([day, items]) => {
+                const past = new Date(items[0].scheduled_end).getTime() < now;
+                return (
+                  <div key={day} className={`rounded-lg border p-3 ${past ? 'border-border bg-surface-muted opacity-70' : 'border-border bg-surface'}`}>
+                    <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {day}
+                      {past ? <Badge variant="secondary">done</Badge> : null}
+                    </div>
+                    <div className="grid gap-1.5">
+                      {items.map((c) => (
+                        <div key={c.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-sm">
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {formatIstTime(c.scheduled_start)}–{formatIstTime(c.scheduled_end)}
+                          </span>
+                          <span className="font-medium">{c.subject_name}</span>
+                          <span className="text-muted-foreground">{c.teacher_name ?? '—'}</span>
+                          {c.status === 'cancelled' ? <Badge variant="destructive">cancelled</Badge> : null}
+                          {c.topic ? <span className="text-xs text-muted-foreground">{c.topic}</span> : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {batch.code} — weekly recurring slots <span className="font-normal text-muted-foreground">(semester {batch.current_semester})</span>
+            </CardTitle>
+            <CardDescription>
+              Optional. A slot repeats every week, and the nightly job expands it into classes 21 days ahead, skipping holidays. Clashes — the same teacher or the
+              same group twice at once — are rejected. This term&apos;s timetable does not use them.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-7">

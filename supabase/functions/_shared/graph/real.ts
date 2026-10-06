@@ -252,7 +252,7 @@ export class RealGraphClient implements GraphClient {
   }
 
   async listMeetingRecordings(meetingId: string, correlationId?: string): Promise<GraphRecording[]> {
-    const res = await this.call<{ value: Array<{ id: string; createdDateTime: string; recordingContentUrl?: string }> }>(
+    const res = await this.call<{ value: Array<{ id: string; createdDateTime: string; endDateTime?: string; recordingContentUrl?: string }> }>(
       'GET',
       `/users/${this.cfg.serviceAccountUserId}/onlineMeetings/${meetingId}/recordings`,
       undefined,
@@ -261,10 +261,12 @@ export class RealGraphClient implements GraphClient {
     return (res.value ?? []).map((r) => ({
       id: r.id,
       createdDateTime: r.createdDateTime,
+      endDateTime: r.endDateTime ?? null,
       contentUrl: r.recordingContentUrl ?? null,
+      // Graph returns no drive pointer for this tenant; the content URL is what playback uses.
       driveId: null,
       driveItemId: null,
-      durationSeconds: null,
+      durationSeconds: r.endDateTime ? Math.max(0, Math.round((new Date(r.endDateTime).getTime() - new Date(r.createdDateTime).getTime()) / 1000)) : null,
       sizeBytes: null,
     }));
   }
@@ -283,6 +285,32 @@ export class RealGraphClient implements GraphClient {
         sizeBytes: i.size ?? null,
         durationSeconds: i.video?.duration ? Math.round(i.video.duration / 1000) : null,
       }));
+  }
+
+  async streamContent(contentUrl: string, range?: string | null, correlationId?: string): Promise<Response> {
+    // The URL comes from our own database, but it is still a URL we are about to send a token to, so
+    // it has to be Graph and nothing else.
+    if (!contentUrl.startsWith('https://graph.microsoft.com/')) {
+      throw new GraphError(`Refusing to stream from ${contentUrl}: not a Microsoft Graph URL`, 0, 'badUrl', null, 'GET {contentUrl}');
+    }
+    const token = await this.getToken();
+    const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+    if (range) headers.Range = range;
+    const started = this.now();
+    const res = await this.fetchImpl(contentUrl, { headers });
+    await this.opts.onCall?.({
+      endpoint: 'GET /users/{sa}/onlineMeetings/{id}/recordings/{id}/content',
+      status: res.status,
+      durationMs: this.now() - started,
+      requestId: res.headers.get('request-id') ?? res.headers.get('client-request-id'),
+      attempt: 1,
+      correlationId,
+      error: res.ok ? undefined : `Graph ${res.status}`,
+    });
+    if (!res.ok) {
+      throw new GraphError(`Graph ${res.status} reading the recording`, res.status, 'recordingContent', null, 'GET {contentUrl}');
+    }
+    return res;
   }
 
   async getDownloadUrl(driveId: string, itemId: string, correlationId?: string): Promise<string> {

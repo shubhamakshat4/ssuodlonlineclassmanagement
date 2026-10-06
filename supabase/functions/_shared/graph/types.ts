@@ -71,7 +71,13 @@ export interface MeetingOptions {
 export interface GraphRecording {
   id: string;
   createdDateTime: string;
-  /** Graph's recordingContentUrl (bytes behind app token); not used for playback */
+  /** when the recording stopped; the only way to know how long it is, as Graph gives no duration */
+  endDateTime: string | null;
+  /**
+   * Graph's recordingContentUrl: the bytes, readable with the application token. For this tenant it is
+   * the ONLY pointer Graph returns, because the service account has no OneDrive, so playback streams
+   * through the Edge Function rather than redirecting to a drive download URL.
+   */
   contentUrl: string | null;
   /** when resolvable, the OneDrive item */
   driveId: string | null;
@@ -127,4 +133,10 @@ export interface GraphClient {
   listRecordingsFolder(correlationId?: string): Promise<DriveItem[]>;
   /** §8 */
   getDownloadUrl(driveId: string, itemId: string, correlationId?: string): Promise<string>;
+  /**
+   * §8, the no-OneDrive path: read the bytes of a recordingContentUrl with the application token.
+   * Returns the upstream response so the caller can pass through status, range headers and the body
+   * without buffering a video in memory.
+   */
+  streamContent(contentUrl: string, range?: string | null, correlationId?: string): Promise<Response>;
 }

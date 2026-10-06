@@ -1,5 +1,6 @@
 import { ActionForm } from '@/components/action-form';
 import { Badge, Card, CardContent, CardHeader, CardTitle, Field, Input, PageHeader, Table, TBody, TD, TH, THead, TR } from '@/components/ui/primitives';
+import { buttonVariants } from '@/components/ui/button';
 import { CsvImportCard } from '@/components/csv-import-card';
 import { createClient } from '@/lib/supabase/server';
 import type { Program } from '@/lib/db/types';
@@ -16,7 +17,13 @@ export default async function ProgramsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Administration" title="Programmes" description="Degree programmes offered through ODL. Batches and subjects hang off a programme." />
+      <PageHeader eyebrow="Administration" title="Programmes" description="Degree programmes offered through ODL. Batches and subjects hang off a programme."
+        actions={
+          <a href="#new" className={buttonVariants({ variant: 'default', size: 'sm' })}>
+            + Add programme
+          </a>
+        }
+      />
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <Card>
           <CardContent className="pt-5">
@@ -56,7 +63,7 @@ export default async function ProgramsPage() {
             </Table>
           </CardContent>
         </Card>
-        <Card>
+        <Card id="new" className="scroll-mt-24">
           <CardHeader>
             <CardTitle>New programme</CardTitle>
           </CardHeader>

@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { AuditLog, ClassSessionView } from '@/lib/db/types';
 import { formatIst } from '@/lib/domain/time';
 import { retrySession } from '../sessions/actions';
-import { retryAllFailed, runProvisionerNow } from './actions';
+import { retryAllFailed, runHarvesterNow, runProvisionerNow } from './actions';
 
 export const metadata = { title: 'Sync health — Admin' };
 // Vercel: allow long imports / provisioner runs (default function timeout is 10 s)
@@ -40,6 +40,7 @@ export default async function SyncHealthPage() {
           <div className="flex gap-2">
             <ActionForm action={runProvisionerNow} inline submitLabel="Run provisioner now" pendingLabel="Running…" variant="outline" />
             <ActionForm action={retryAllFailed} inline submitLabel="Retry all failed" variant="secondary" />
+            <ActionForm action={runHarvesterNow} inline submitLabel="Fetch recordings now" pendingLabel="Fetching…" variant="outline" />
           </div>
         }
       />
